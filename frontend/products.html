@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — Artisan Marketplace</title>
+  <meta name="description" content="Discover handcrafted pottery, textiles, natural skincare, woodcraft, and more from skilled artisans across India." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="container" style="padding-top: 12px; padding-bottom: 12px;">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1>🏺 Artisan Marketplace</h1>
+    <p id="product-count" style="color:var(--text-secondary); margin-top:4px;">Discovering handcrafted treasures...</p>
+  </div>
+
+  <!-- Search + Sort Bar -->
+  <div class="flex gap-2" style="flex-wrap:wrap; margin-bottom:16px; align-items:center;">
+    <div class="search-bar" style="flex:1; min-width:240px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search pottery, textiles, candles..." />
+    </div>
+    <div class="sort-bar">
+      <label>Sort:</label>
+      <select class="form-control" id="sort-select" style="width:160px;">
+        <option value="">Default</option>
+        <option value="price_asc">Price: Low → High</option>
+        <option value="price_desc">Price: High → Low</option>
+        <option value="rating">Top Rated</option>
+        <option value="newest">Newest First</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="products-layout">
+
+    <!-- Filters Panel -->
+    <aside class="filters-panel">
+      <h3 style="font-size:1rem; font-weight:700; margin-bottom:20px;">🌿 Refine</h3>
+
+      <div class="filter-section">
+        <div class="filter-title">Category</div>
+        <div id="category-filters">
+          <label class="filter-option active" data-category="">
+            <input type="radio" name="category" value="" checked /> All Categories
+          </label>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <div class="filter-title">Price Range</div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <input type="number" id="min-price" class="form-control" placeholder="Min ₹" min="0" />
+        </div>
+        <div class="form-group">
+          <input type="number" id="max-price" class="form-control" placeholder="Max ₹" min="0" />
+        </div>
+        <button onclick="applyFilters()" class="btn btn-primary btn-sm btn-block">Apply</button>
+      </div>
+
+      <div class="filter-section">
+        <button onclick="clearFilters()" class="btn btn-outline btn-sm btn-block">Clear Filters</button>
+      </div>
+    </aside>
+
+    <!-- Products Grid -->
+    <main>
+      <div id="products-grid" class="products-grid">
+        <!-- Skeleton loader -->
+        ${Array(6).fill(0).map(() => `
+          <div class="product-card" style="opacity:0.3;">
+            <div style="height:200px; background:var(--bg-input); border-radius:var(--radius-lg);"></div>
+            <div class="product-body">
+              <div style="height:12px; background:var(--bg-input); border-radius:4px; margin-bottom:8px;"></div>
+              <div style="height:16px; background:var(--bg-input); border-radius:4px; width:70%;"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div id="no-products" class="empty-state hidden">
+        <div class="empty-icon">🔍</div>
+        <h3>No artisan products found</h3>
+        <p>Try different filters or search terms</p>
+        <button onclick="clearFilters()" class="btn btn-primary mt-2">Clear Filters</button>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  buildNavbar('products');
+
+  let allCategories = [];
+  let activeCategory = '';
+  let searchTimer = null;
+
+  // ── Load Categories ─────────────────────────────────────────
+  async function loadCategories() {
+    const { data } = await api.get('/products/categories');
+    allCategories = data.categories || [];
+    const container = document.getElementById('category-filters');
+    container.innerHTML = `
+      <label class="filter-option active" data-category="" onclick="setCategory('')">
+        <input type="radio" name="category" value="" checked /> All Categories
+      </label>
+    `;
+    allCategories.forEach(cat => {
+      const el = document.createElement('label');
+      el.className = 'filter-option';
+      el.dataset.category = cat.category_id;
+      el.innerHTML = `<input type="radio" name="category" value="${cat.category_id}" /> ${cat.name}`;
+      el.addEventListener('click', () => setCategory(cat.category_id));
+      container.appendChild(el);
+    });
+  }
+
+  function setCategory(catId) {
+    activeCategory = catId;
+    document.querySelectorAll('.filter-option').forEach(el => {
+      el.classList.toggle('active', el.dataset.category == catId);
+    });
+    loadProducts();
+  }
+
+  // ── Load Products ───────────────────────────────────────────
+  async function loadProducts() {
+    const search   = document.getElementById('search-input').value.trim();
+    const sort     = document.getElementById('sort-select').value;
+    const minPrice = document.getElementById('min-price').value;
+    const maxPrice = document.getElementById('max-price').value;
+
+    let query = [];
+    if (activeCategory) query.push(`category=${activeCategory}`);
+    if (search)         query.push(`search=${encodeURIComponent(search)}`);
+    if (sort)           query.push(`sort=${sort}`);
+    if (minPrice)       query.push(`min_price=${minPrice}`);
+    if (maxPrice)       query.push(`max_price=${maxPrice}`);
+
+    const endpoint = '/products' + (query.length ? '?' + query.join('&') : '');
+
+    try {
+      const { data } = await api.get(endpoint);
+      renderProducts(data.products || []);
+    } catch(e) {
+      showToast('Failed to load products', 'error');
+    }
+  }
+
+  function renderProducts(products) {
+    const grid = document.getElementById('products-grid');
+    const noEl = document.getElementById('no-products');
+    const countEl = document.getElementById('product-count');
+
+    countEl.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
+
+    if (products.length === 0) {
+      grid.innerHTML = '';
+      noEl.classList.remove('hidden');
+      return;
+    }
+    noEl.classList.add('hidden');
+
+    grid.innerHTML = products.map(p => `
+      <div class="product-card" id="prod-${p.product_id}">
+        <div class="product-img-wrap">
+          <img src="${p.image_url || 'https://via.placeholder.com/400x300?text=No+Image'}"
+               alt="${p.name}"
+               onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'" />
+          <span class="product-badge">${p.category}</span>
+          ${p.stock === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+        </div>
+        <div class="product-body">
+          <div class="product-brand">${p.brand || ''}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-rating">
+            <span class="stars">${stars(p.avg_rating)}</span>
+            <span>(${Number(p.avg_rating).toFixed(1)}) · ${p.review_count} reviews</span>
+          </div>
+          <div class="product-footer">
+            <span class="product-price">${formatPrice(p.price)}</span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="font-size:0.75rem; color: ${p.stock > 0 ? 'var(--success)' : 'var(--danger)'}">
+                ${p.stock > 0 ? `In stock (${p.stock})` : 'Sold out'}
+              </span>
+            </div>
+          </div>
+          <button
+            class="btn btn-primary btn-sm btn-block"
+            style="margin-top:12px;"
+            onclick="addToCart(${p.product_id}, '${p.name.replace(/'/g,"\\'")}', ${p.stock})"
+            ${p.stock === 0 ? 'disabled' : ''}>
+            ${p.stock === 0 ? '✕ Out of Stock' : '🛒 Add to Basket'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function addToCart(productId, name, stock) {
+    if (stock === 0) return;
+    try {
+      const { ok, data } = await api.post('/cart/add', { product_id: productId, quantity: 1 });
+      if (ok) {
+        showToast(`${name} added to cart! 🛒`, 'success');
+        await updateCartBadge();
+      } else {
+        showToast(data.message || 'Could not add to cart', 'error');
+      }
+    } catch(e) {
+      showToast('Failed to add to cart', 'error');
+    }
+  }
+
+  function applyFilters() { loadProducts(); }
+
+  function clearFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('sort-select').value  = '';
+    document.getElementById('min-price').value    = '';
+    document.getElementById('max-price').value    = '';
+    setCategory('');
+  }
+
+  // Debounced search
+  document.getElementById('search-input').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadProducts, 400);
+  });
+  document.getElementById('sort-select').addEventListener('change', loadProducts);
+
+  // Init
+  loadCategories();
+  loadProducts();
+  updateCartBadge();
+</script>
+</body>
+</html>

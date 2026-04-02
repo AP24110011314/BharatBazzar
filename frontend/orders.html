@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — My Orders</title>
+  <meta name="description" content="Track and review all your handcrafted purchases from BharatBazzar artisans." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="container" style="padding-top:12px; padding-bottom:60px;">
+  <div class="page-header">
+    <h1>📦 My Orders</h1>
+    <p>Track and review all your handcrafted purchases</p>
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-orders" class="empty-state hidden">
+    <div class="empty-icon">🏺</div>
+    <h3>No orders yet</h3>
+    <p>You haven't discovered any artisan pieces yet. Let's change that!</p>
+    <a href="products.html" class="btn btn-primary mt-2" style="display:inline-flex;">Explore Artisans</a>
+  </div>
+
+  <!-- Orders List -->
+  <div id="orders-container"></div>
+</div>
+
+<footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  buildNavbar('orders');
+
+  const statusColors = {
+    pending:   'warning',
+    confirmed: 'primary',
+    shipped:   'info',
+    delivered: 'success',
+    cancelled: 'danger',
+  };
+
+  const payStatusColors = {
+    pending:  'warning',
+    success:  'success',
+    failed:   'danger',
+    refunded: 'info',
+  };
+
+  function statusEmoji(s) {
+    return { pending:'⏳', confirmed:'✅', shipped:'🚚', delivered:'📬', cancelled:'❌' }[s] || '❓';
+  }
+
+  async function loadOrders() {
+    showLoader();
+    try {
+      const { ok, data } = await api.get('/orders');
+      hideLoader();
+
+      if (!ok) { showToast(data.message, 'error'); return; }
+
+      const orders = data.orders || [];
+      const container = document.getElementById('orders-container');
+      const emptyEl   = document.getElementById('empty-orders');
+
+      if (orders.length === 0) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      container.innerHTML = orders.map(order => `
+        <div class="order-card">
+          <div class="order-header">
+            <div>
+              <div class="order-id">Order #${order.order_id}</div>
+              <div class="order-date">📅 ${new Date(order.created_at).toLocaleDateString('en-IN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <span class="badge badge-${statusColors[order.status] || 'primary'}">
+                ${statusEmoji(order.status)} ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
+              <span class="badge badge-${payStatusColors[order.payment_status] || 'warning'}">
+                💳 ${order.payment_status || 'unpaid'}
+              </span>
+            </div>
+          </div>
+          <div class="order-body">
+            <!-- Product thumbnails -->
+            <div class="order-items-preview">
+              ${(order.items || []).map(item => `
+                <img class="order-item-thumb"
+                     src="${item.image_url || 'https://via.placeholder.com/56?text=?'}"
+                     alt="${item.name}"
+                     title="${item.name} × ${item.quantity}"
+                     onerror="this.src='https://via.placeholder.com/56?text=?'" />
+              `).join('')}
+            </div>
+
+            <!-- Item list -->
+            <div style="margin-bottom:12px;">
+              ${(order.items || []).map(item => `
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:4px 0; color:var(--text-secondary);">
+                  <span>${item.name} <span style="color:var(--text-muted);">× ${item.quantity}</span></span>
+                  <span style="color:var(--text-primary); font-weight:500;">${formatPrice(item.line_total)}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Delivery info -->
+            ${order.street ? `
+              <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">
+                📍 ${order.street}, ${order.city}, ${order.state} — ${order.zip}
+              </div>
+            ` : ''}
+
+            <!-- Transaction ref -->
+            ${order.transaction_ref ? `
+              <div style="font-size:0.78rem; font-family:monospace; color:var(--primary-dark); background:var(--bg-input); padding:6px 10px; border-radius:var(--radius-sm); margin-bottom:10px; word-break:break-all;">
+                Ref: ${order.transaction_ref}
+              </div>
+            ` : ''}
+
+            <div class="order-footer">
+              <div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">Payment via</div>
+                <div style="font-size:0.85rem; color:var(--text-secondary); text-transform:capitalize;">
+                  ${(order.payment_method || 'N/A').replace('_', ' ')}
+                </div>
+              </div>
+              <div style="text-align:right;">
+                ${order.discount && parseFloat(order.discount) > 0 ? `
+                  <div style="font-size:0.78rem; color:var(--success);">Saved: ${formatPrice(order.discount)}</div>
+                ` : ''}
+                <div class="order-total">${formatPrice(order.total_amount)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+    } catch(e) {
+      hideLoader();
+      showToast('Failed to load orders: ' + e.message, 'error');
+    }
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

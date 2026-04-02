@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — Checkout</title>
+  <meta name="description" content="Review your order and complete payment securely on BharatBazzar." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="container" style="padding-top:12px; padding-bottom:60px;">
+
+  <!-- Success Screen (hidden initially) -->
+  <div id="success-screen" class="hidden" style="padding-top:40px;">
+    <div class="success-screen">
+      <div class="success-icon">✅</div>
+      <h2>Order Placed Successfully!</h2>
+      <p>Your order has been confirmed and payment processed.</p>
+      <div class="tx-ref" id="tx-ref-display"></div>
+      <div style="margin-top:24px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <a href="orders.html" class="btn btn-primary btn-lg">📦 View My Orders</a>
+        <a href="products.html" class="btn btn-outline btn-lg">🏪 Continue Shopping</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Form -->
+  <div id="checkout-content">
+    <div class="page-header">
+      <h1>💳 Checkout</h1>
+      <p>Almost there! Complete your order below.</p>
+    </div>
+
+    <div class="checkout-layout">
+      <!-- Left: Steps -->
+      <div>
+
+        <!-- Step 1: Delivery Address -->
+        <div class="card checkout-section">
+          <div class="checkout-section-title">
+            <span class="step-num">1</span> Delivery Address
+          </div>
+
+          <div id="address-list"></div>
+
+          <button onclick="toggleAddressForm()" class="btn btn-outline btn-sm" id="add-addr-btn">
+            + Add New Address
+          </button>
+
+          <div id="address-form" class="hidden" style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="form-group">
+                <label class="form-label">Label</label>
+                <select id="addr-label" class="form-control">
+                  <option>Home</option><option>Office</option><option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">ZIP Code</label>
+                <input type="text" id="addr-zip" class="form-control" placeholder="560001" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Street Address</label>
+              <input type="text" id="addr-street" class="form-control" placeholder="12, MG Road" />
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" id="addr-city" class="form-control" placeholder="Bengaluru" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">State</label>
+                <input type="text" id="addr-state" class="form-control" placeholder="Karnataka" />
+              </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button onclick="saveAddress()" class="btn btn-primary btn-sm">Save Address</button>
+              <button onclick="toggleAddressForm()" class="btn btn-outline btn-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Payment Method -->
+        <div class="card checkout-section">
+          <div class="checkout-section-title">
+            <span class="step-num">2</span> Payment Method
+          </div>
+          <div class="payment-methods">
+            <div class="payment-method selected" data-method="upi" onclick="selectPayment(this, 'upi')">
+              <div class="payment-icon">📱</div>UPI
+            </div>
+            <div class="payment-method" data-method="credit_card" onclick="selectPayment(this, 'credit_card')">
+              <div class="payment-icon">💳</div>Credit Card
+            </div>
+            <div class="payment-method" data-method="debit_card" onclick="selectPayment(this, 'debit_card')">
+              <div class="payment-icon">🏧</div>Debit Card
+            </div>
+            <div class="payment-method" data-method="net_banking" onclick="selectPayment(this, 'net_banking')">
+              <div class="payment-icon">🏦</div>Net Banking
+            </div>
+            <div class="payment-method" data-method="wallet" onclick="selectPayment(this, 'wallet')">
+              <div class="payment-icon">👛</div>Wallet
+            </div>
+            <div class="payment-method" data-method="cod" onclick="selectPayment(this, 'cod')">
+              <div class="payment-icon">💵</div>Cash on Delivery
+            </div>
+          </div>
+          <p class="text-muted mt-2" style="font-size:0.8rem;">
+            🔒 This is a demo — payment is simulated. No real transaction occurs.
+          </p>
+        </div>
+
+        <!-- Step 3: Coupon -->
+        <div class="card checkout-section">
+          <div class="checkout-section-title">
+            <span class="step-num">3</span> Coupon Code (Optional)
+          </div>
+          <div class="coupon-input">
+            <input type="text" id="coupon-input" class="form-control" placeholder="e.g. SAVE10, FLAT500" />
+            <button onclick="applyCoupon()" class="btn btn-outline">Apply</button>
+          </div>
+          <div id="coupon-msg" class="coupon-msg"></div>
+          <div class="text-muted mt-1" style="font-size:0.78rem;">Available: SAVE10, FLAT500, WELCOME20</div>
+        </div>
+
+      </div>
+
+      <!-- Right: Order Summary -->
+      <div>
+        <div class="summary-card" style="position: sticky; top: 80px;">
+          <h3 class="summary-title">📋 Order Summary</h3>
+
+          <div id="checkout-items" class="order-items-mini"></div>
+
+          <div class="summary-row"><span>Subtotal</span><span id="co-subtotal">—</span></div>
+          <div class="summary-row" id="co-discount-row" style="color:var(--success)"><span>Discount</span><span id="co-discount">—</span></div>
+          <div class="summary-row"><span>Shipping</span><span style="color:var(--success)">FREE</span></div>
+          <div class="summary-row total"><span>Total</span><span id="co-total">—</span></div>
+
+          <button
+            id="place-order-btn"
+            onclick="placeOrder()"
+            class="btn btn-success btn-block btn-lg"
+            style="margin-top:20px;">
+            ✅ Place Order &amp; Pay
+          </button>
+          <p class="text-muted text-center mt-1" style="font-size:0.78rem;">
+            By placing order you agree to our Terms of Service
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">© 2024 BharatBazzar — DBMS Project Demo</div></footer>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  buildNavbar('checkout');
+
+  let selectedAddressId = null;
+  let selectedPaymentMethod = 'upi';
+  let cartItems = [];
+  let subtotal = 0;
+
+  // Pre-fill coupon from cart page
+  const savedCoupon = localStorage.getItem('couponCode');
+  if (savedCoupon) {
+    window.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('coupon-input');
+      if (input) { input.value = savedCoupon; }
+    });
+  }
+
+  // ── Load addresses ──────────────────────────────────────────
+  async function loadAddresses() {
+    const { ok, data } = await api.get('/orders/addresses');
+    const list = document.getElementById('address-list');
+
+    if (!ok || !data.addresses?.length) {
+      list.innerHTML = '<p class="text-muted" style="margin-bottom:12px;">No saved addresses. Please add one below.</p>';
+      toggleAddressForm();
+      return;
+    }
+
+    list.innerHTML = data.addresses.map(addr => `
+      <div class="address-card ${addr.is_default ? 'selected' : ''}"
+           id="addr-card-${addr.address_id}"
+           onclick="selectAddress(${addr.address_id})">
+        <strong>${addr.label}</strong>
+        ${addr.is_default ? '<span class="badge badge-primary" style="margin-left:8px;">Default</span>' : ''}
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:4px;">
+          ${addr.street}, ${addr.city}, ${addr.state} — ${addr.zip}
+        </div>
+      </div>
+    `).join('');
+
+    // Auto-select default
+    const def = data.addresses.find(a => a.is_default) || data.addresses[0];
+    if (def) selectAddress(def.address_id);
+  }
+
+  function selectAddress(id) {
+    selectedAddressId = id;
+    document.querySelectorAll('.address-card').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`addr-card-${id}`);
+    if (el) el.classList.add('selected');
+  }
+
+  // ── Load Cart ───────────────────────────────────────────────
+  async function loadCartSummary() {
+    const { ok, data } = await api.get('/cart');
+    if (!ok || !data.cart?.items?.length) {
+      showToast('Your cart is empty!', 'warning');
+      setTimeout(() => { window.location.href = 'cart.html'; }, 1500);
+      return;
+    }
+    cartItems = data.cart.items;
+    subtotal  = parseFloat(data.cart.subtotal);
+
+    document.getElementById('co-subtotal').textContent = formatPrice(subtotal);
+    document.getElementById('co-total').textContent    = formatPrice(subtotal);
+    document.getElementById('co-discount-row').style.display = 'none';
+
+    document.getElementById('checkout-items').innerHTML = cartItems.map(item => `
+      <div class="order-item-mini">
+        <img src="${item.image_url || 'https://via.placeholder.com/50x50?text=?'}" alt="${item.name}"
+             onerror="this.src='https://via.placeholder.com/50x50?text=?'" />
+        <div class="order-item-mini-info">
+          <div class="name">${item.name}</div>
+          <div class="qty">Qty: ${item.quantity}</div>
+        </div>
+        <div class="price">${formatPrice(item.line_total)}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── Payment selection ───────────────────────────────────────
+  function selectPayment(el, method) {
+    selectedPaymentMethod = method;
+    document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ── Address form ────────────────────────────────────────────
+  function toggleAddressForm() {
+    document.getElementById('address-form').classList.toggle('hidden');
+  }
+
+  async function saveAddress() {
+    const street = document.getElementById('addr-street').value.trim();
+    const city   = document.getElementById('addr-city').value.trim();
+    const state  = document.getElementById('addr-state').value.trim();
+    const zip    = document.getElementById('addr-zip').value.trim();
+    const label  = document.getElementById('addr-label').value;
+
+    if (!street || !city || !state || !zip) {
+      showToast('Please fill all address fields.', 'warning'); return;
+    }
+
+    const { ok, data } = await api.post('/orders/addresses', { label, street, city, state, zip, is_default: 1 });
+    if (ok) {
+      showToast('Address saved!', 'success');
+      toggleAddressForm();
+      await loadAddresses();
+    } else {
+      showToast(data.message, 'error');
+    }
+  }
+
+  // ── Coupon ──────────────────────────────────────────────────
+  function applyCoupon() {
+    const code = document.getElementById('coupon-input').value.trim().toUpperCase();
+    const msgEl = document.getElementById('coupon-msg');
+    if (!code) { msgEl.textContent = 'Enter a coupon code.'; msgEl.style.color = 'var(--danger)'; return; }
+    msgEl.innerHTML = `✅ Coupon <strong>${code}</strong> applied — discount will reflect in final total.`;
+    msgEl.style.color = 'var(--success)';
+    localStorage.setItem('couponCode', code);
+  }
+
+  // ── Place Order ─────────────────────────────────────────────
+  async function placeOrder() {
+    if (!selectedAddressId) {
+      showToast('Please select a delivery address.', 'warning'); return;
+    }
+
+    const btn = document.getElementById('place-order-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:22px;height:22px;border-width:2px;"></div> Processing...';
+
+    const couponCode = document.getElementById('coupon-input').value.trim().toUpperCase();
+
+    try {
+      const { ok, data } = await api.post('/orders/place', {
+        address_id:       selectedAddressId,
+        coupon_code:      couponCode || '',
+        payment_method:   selectedPaymentMethod,
+        payment_provider: 'BharatBazzar Demo',
+      });
+
+      if (ok && data.order_id) {
+        localStorage.removeItem('couponCode');
+        localStorage.setItem('cartCount', 0);
+
+        document.getElementById('checkout-content').classList.add('hidden');
+        document.getElementById('success-screen').classList.remove('hidden');
+        document.getElementById('tx-ref-display').innerHTML =
+          `Order #${data.order_id} &nbsp;|&nbsp; ${data.payment_message}`;
+        showToast('🎉 Order placed successfully!', 'success');
+      } else {
+        showToast(data.message || 'Order failed. Please try again.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '✅ Place Order & Pay';
+      }
+    } catch(e) {
+      showToast('Network error. Try again.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '✅ Place Order & Pay';
+    }
+  }
+
+  // Init
+  loadAddresses();
+  loadCartSummary();
+</script>
+</body>
+</html>

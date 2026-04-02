@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — Login & Register</title>
+  <meta name="description"
+    content="Sign in or create a new account on BharatBazzar, your premium online shopping destination." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+  <div class="auth-bg">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <h1>🌿 BharatBazzar</h1>
+        <p>Handcrafted finds, delivered thoughtfully</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-control" placeholder="alice@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required />
+        </div>
+        <div class="text-muted mt-1" style="margin-bottom:12px;">
+          Demo: <code>alice@example.com</code> / <code>password123</code>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+          🔑 Login
+        </button>
+        <p class="text-center mt-2" style="font-size:0.85rem; color:var(--text-muted);">
+          Don't have an account? <a href="#" onclick="switchTab('register')" style="color:var(--primary)">Register
+            here</a>
+        </p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="hidden">
+        <div class="form-group">
+          <label class="form-label" for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" class="form-control" placeholder="Alice Johnson" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Email Address</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="alice@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-phone">Phone (optional)</label>
+          <input type="tel" id="reg-phone" class="form-control" placeholder="9876543210" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Minimum 6 characters" required
+            minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="register-btn">
+          🚀 Create Account
+        </button>
+        <p class="text-center mt-2" style="font-size:0.85rem; color:var(--text-muted);">
+          Already have an account? <a href="#" onclick="switchTab('login')" style="color:var(--primary)">Login here</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // If already logged in, redirect
+    if (localStorage.getItem('token')) window.location.href = 'products.html';
+
+    function switchTab(tab) {
+      document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    }
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.textContent = 'Logging in...';
+
+      try {
+        const { ok, data } = await api.post('/auth/login', {
+          email: document.getElementById('login-email').value.trim(),
+          password: document.getElementById('login-password').value,
+        });
+
+        if (ok && data.token) {
+          saveSession(data.token, data.user);
+          showToast('Welcome back, ' + data.user.name + '! 🎉', 'success');
+          setTimeout(() => window.location.href = 'products.html', 800);
+        } else {
+          showToast(data.message || 'Login failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Is the backend running?', 'error');
+      }
+      btn.disabled = false; btn.textContent = '🔑 Login';
+    });
+
+    // Register
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true; btn.textContent = 'Creating account...';
+
+      try {
+        const { ok, data } = await api.post('/auth/register', {
+          name: document.getElementById('reg-name').value.trim(),
+          email: document.getElementById('reg-email').value.trim(),
+          phone: document.getElementById('reg-phone').value.trim(),
+          password: document.getElementById('reg-password').value,
+        });
+
+        if (ok && data.token) {
+          saveSession(data.token, data.user);
+          showToast('Account created! Welcome to BharatBazzar 🛒', 'success');
+          setTimeout(() => window.location.href = 'products.html', 800);
+        } else {
+          showToast(data.message || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error. Is the backend running?', 'error');
+      }
+      btn.disabled = false; btn.textContent = '🚀 Create Account';
+    });
+  </script>
+</body>
+
+</html>

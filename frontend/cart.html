@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — My Basket</title>
+  <meta name="description" content="Review your handcrafted selections before placing an order on BharatBazzar." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="container" style="padding-top:12px; padding-bottom:40px;">
+
+  <div class="page-header">
+    <h1>🧕 My Basket</h1>
+    <p id="cart-subtitle">Loading your basket...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div id="empty-cart" class="empty-state hidden">
+    <div class="empty-icon">🧕</div>
+    <h3>Your basket is empty</h3>
+    <p>Discover handcrafted treasures and fill your basket!</p>
+    <a href="products.html" class="btn btn-primary mt-2" style="display:inline-flex;">Explore Artisans</a>
+  </div>
+
+  <!-- Cart Layout -->
+  <div class="cart-layout" id="cart-layout">
+    <!-- Cart Items -->
+    <div>
+      <div id="cart-items-container"></div>
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="products.html" class="btn btn-outline">← Continue Browsing</a>
+        <button onclick="clearAll()" class="btn btn-danger btn-sm" id="clear-btn">🗑️ Clear Cart</button>
+      </div>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="summary-card">
+      <h3 class="summary-title">Order Summary</h3>
+
+      <div class="summary-row"><span>Subtotal</span><span id="summary-subtotal">₹0.00</span></div>
+      <div class="summary-row"><span>Shipping</span><span style="color:var(--success)">FREE</span></div>
+      <div class="summary-row total"><span>Total</span><span id="summary-total">₹0.00</span></div>
+
+      <div class="coupon-input">
+        <input type="text" id="coupon-input" class="form-control" placeholder="SAVE10, FLAT500..." />
+        <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Apply</button>
+      </div>
+      <div id="coupon-msg" class="coupon-msg"></div>
+
+      <a href="checkout.html" class="btn btn-primary btn-block btn-lg" style="margin-top:20px; text-align:center;">
+        Proceed to Checkout →
+      </a>
+      <p class="text-center text-muted mt-1">🌿 Artisan-made, ethically sourced</p>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  buildNavbar('cart');
+
+  let cartData = null;
+
+  async function loadCart() {
+    try {
+      const { ok, data } = await api.get('/cart');
+      if (!ok) throw new Error(data.message);
+      cartData = data.cart;
+      renderCart();
+    } catch(e) {
+      showToast('Failed to load cart: ' + e.message, 'error');
+    }
+  }
+
+  function renderCart() {
+    const items    = cartData?.items || [];
+    const subtotal = parseFloat(cartData?.subtotal || 0);
+    const emptyEl  = document.getElementById('empty-cart');
+    const layoutEl = document.getElementById('cart-layout');
+    const subtitle = document.getElementById('cart-subtitle');
+
+    subtitle.textContent = `${items.length} item${items.length !== 1 ? 's' : ''} in your cart`;
+    localStorage.setItem('cartCount', items.length);
+
+    if (items.length === 0) {
+      emptyEl.classList.remove('hidden');
+      layoutEl.classList.add('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    layoutEl.classList.remove('hidden');
+
+    document.getElementById('cart-items-container').innerHTML = items.map(item => `
+      <div class="cart-item" id="item-${item.product_id}">
+        <img class="cart-item-img"
+             src="${item.image_url || 'https://via.placeholder.com/90x90?text=?'}"
+             alt="${item.name}"
+             onerror="this.src='https://via.placeholder.com/90x90?text=?'" />
+        <div class="cart-item-info">
+          <div class="cart-item-brand">${item.brand || ''}</div>
+          <div class="cart-item-name">${item.name}</div>
+          <div style="font-size:0.8rem; color:${item.stock > 0 ? 'var(--success)' : 'var(--danger)'}; margin-top:4px;">
+            ${item.stock > 0 ? `In stock (${item.stock} available)` : 'Out of stock!'}
+          </div>
+          <div class="qty-ctrl" style="margin-top:10px;">
+            <button class="qty-btn" onclick="changeQty(${item.product_id}, ${item.quantity - 1})">−</button>
+            <span class="qty-val">${item.quantity}</span>
+            <button class="qty-btn" onclick="changeQty(${item.product_id}, ${item.quantity + 1})"
+                    ${item.quantity >= item.stock ? 'disabled style="opacity:0.3"' : ''}>+</button>
+          </div>
+        </div>
+        <div class="cart-item-price">
+          <div class="price">${formatPrice(item.line_total)}</div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px;">${formatPrice(item.price)} each</div>
+          <button class="remove-btn" onclick="removeItem(${item.product_id})">🗑️ Remove</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('summary-subtotal').textContent = formatPrice(subtotal);
+    document.getElementById('summary-total').textContent    = formatPrice(subtotal);
+    document.getElementById('cart-badge') && (document.getElementById('cart-badge').textContent = items.length);
+  }
+
+  async function changeQty(productId, newQty) {
+    try {
+      const { ok, data } = await api.put('/cart/update', { product_id: productId, quantity: newQty });
+      if (ok) { await loadCart(); }
+      else showToast(data.message, 'error');
+    } catch(e) {
+      showToast('Update failed', 'error');
+    }
+  }
+
+  async function removeItem(productId) {
+    const item = document.getElementById(`item-${productId}`);
+    if (item) { item.style.opacity = '0.4'; item.style.pointerEvents = 'none'; }
+    try {
+      const { ok } = await api.delete('/cart/remove', { product_id: productId });
+      if (ok) { showToast('Item removed', 'info'); await loadCart(); }
+    } catch(e) {
+      if (item) { item.style.opacity = '1'; item.style.pointerEvents = ''; }
+      showToast('Failed to remove item', 'error');
+    }
+  }
+
+  async function clearAll() {
+    if (!confirm('Clear all items from cart?')) return;
+    try {
+      await api.delete('/cart/clear');
+      showToast('Cart cleared', 'info');
+      await loadCart();
+    } catch(e) {
+      showToast('Failed to clear cart', 'error');
+    }
+  }
+
+  function applyCoupon() {
+    const code = document.getElementById('coupon-input').value.trim().toUpperCase();
+    const msgEl = document.getElementById('coupon-msg');
+    if (!code) { msgEl.textContent = 'Please enter a coupon code.'; msgEl.style.color = 'var(--danger)'; return; }
+    // Store for checkout page
+    localStorage.setItem('couponCode', code);
+    msgEl.innerHTML = `✅ Coupon <strong>${code}</strong> will be applied at checkout.`;
+    msgEl.style.color = 'var(--success)';
+  }
+
+  loadCart();
+</script>
+</body>
+</html>
