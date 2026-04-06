@@ -110,7 +110,73 @@ INSERT INTO Products (category_id, name, description, price, image_url, brand, i
    'Hand-poured unbleached beeswax pillar candle. Scented with pure sage and sandalwood essential oils. Burns 60+ hours.',
    1199.00,
    'https://images.unsplash.com/photo-1603905830550-ae55cfe9c6ee?w=600&q=80',
-   'Diya Atelier', 1);
+   'Diya Atelier', 1),
+
+  -- More Pottery & Ceramics
+  (1, 'Indigo Blue Ceramic Planter',
+   'Hand-thrown ceramic planter with a rich indigo glaze and drainage hole. Ideal for succulents or small ferns. 15 cm diameter.',
+   1349.00,
+   'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600&q=80',
+   'Earth & Fire Studio', 1),
+
+  (1, 'Raku-Fired Tea Cup Set',
+   'Set of 2 Japanese-inspired raku-fired cups. Each cup is unique with crackle glaze in earthy tones. Perfect for tea ceremonies.',
+   1899.00,
+   'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&q=80',
+   'Mitti Kala', 1),
+
+  -- More Handwoven Textiles
+  (2, 'Ajrakh Block-Print Cotton Stole',
+   'Hand block-printed stole using traditional Ajrakh motifs on soft handspun cotton. 200 x 70 cm. Natural indigo and madder dyes.',
+   1149.00,
+   'https://images.unsplash.com/photo-1583846783214-7229a91b20ed?w=600&q=80',
+   'Rangrez House', 1),
+
+  (2, 'Hand-Knitted Wool Throw Blanket',
+   'Chunky hand-knitted throw in undyed natural wool. 130 x 180 cm — drapes beautifully over sofas.',
+   4599.00,
+   'https://images.unsplash.com/photo-1580301762395-21ce84d00bc6?w=600&q=80',
+   'Lokal Weaves', 1),
+
+  -- More Natural Skincare
+  (3, 'Turmeric & Neem Face Mask Powder',
+   'Blend of wild turmeric, neem leaf, and kaolin clay. Mix with rose water for a brightening mask. 60g resealable pouch.',
+   449.00,
+   'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=600&q=80',
+   'Vana Herbals', 1),
+
+  (3, 'Whipped Shea & Kokum Body Butter',
+   'Rich body butter whipped with raw shea, kokum, and mango butter. Deeply moisturising, melts on contact. 150g glass jar.',
+   699.00,
+   'https://images.unsplash.com/photo-1556228452-8c6b5745a7b0?w=600&q=80',
+   'Vana Herbals', 1),
+
+  -- More Woodcraft
+  (4, 'Hand-Carved Sheesham Wood Incense Holder',
+   'Intricately carved sheesham (Indian rosewood) incense stand with ash-catcher tray. Holds standard agarbatti sticks.',
+   849.00,
+   'https://images.unsplash.com/photo-1608181831718-1d9d3ee1e2c0?w=600&q=80',
+   'Kaam Woodcraft', 1),
+
+  -- More Candles & Wax
+  (5, 'Rose & Geranium Beeswax Taper Candles',
+   'Pair of hand-dipped beeswax taper candles, scented with rose absolute and geranium. Burn time ~8 hours each. 25 cm tall.',
+   599.00,
+   'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?w=600&q=80',
+   'Diya Atelier', 1),
+
+  -- More Macrame & Fibre
+  (6, 'Macrame Plant Hanger Set of 2',
+   'Pair of hand-knotted cotton macrame plant hangers. Holds up to 20 cm pots. Adjustable loops at top. Natural and ivory finish.',
+   799.00,
+   'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+   'Knotted Stories', 1),
+
+  (6, 'Woven Seagrass Storage Basket',
+   'Handwoven seagrass basket with braided leather handles. Multi-purpose — great for blankets, toys, or laundry. 35 x 30 cm.',
+   1499.00,
+   'https://images.unsplash.com/photo-1595418518533-91bcd4c2a0df?w=600&q=80',
+   'Knotted Stories', 1);
 
 -- --------------------------------------------------------
 -- Inventory  (quantity in stock)
@@ -127,7 +193,17 @@ INSERT INTO Inventory (product_id, quantity) VALUES
   (9,  25),   -- Mango Wood Serving Board
   (10, 40),   -- Neem Wood Salad Servers
   (11, 60),   -- Soy Beeswax Botanical Candle
-  (12, 35);   -- Sage & Sandalwood Pillar Candle
+  (12, 35),   -- Sage & Sandalwood Pillar Candle
+  (13, 28),   -- Indigo Blue Ceramic Planter
+  (14, 22),   -- Raku-Fired Tea Cup Set
+  (15, 55),   -- Ajrakh Block-Print Cotton Stole
+  (16, 15),   -- Hand-Knitted Wool Throw Blanket
+  (17, 90),   -- Turmeric & Neem Face Mask Powder
+  (18, 70),   -- Whipped Shea & Kokum Body Butter
+  (19, 32),   -- Sheesham Wood Incense Holder
+  (20, 48),   -- Rose & Geranium Beeswax Taper Candles
+  (21, 65),   -- Macrame Plant Hanger Set of 2
+  (22, 30);   -- Woven Seagrass Storage Basket
 
 -- --------------------------------------------------------
 -- Coupons
