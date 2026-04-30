@@ -42,12 +42,13 @@
       <h3 class="summary-title">Order Summary</h3>
 
       <div class="summary-row"><span>Subtotal</span><span id="summary-subtotal">₹0.00</span></div>
+      <div class="summary-row" id="summary-discount-row" style="display:none; color:var(--success)"><span>Discount</span><span id="summary-discount">− ₹0.00</span></div>
       <div class="summary-row"><span>Shipping</span><span style="color:var(--success)">FREE</span></div>
       <div class="summary-row total"><span>Total</span><span id="summary-total">₹0.00</span></div>
 
       <div class="coupon-input">
-        <input type="text" id="coupon-input" class="form-control" placeholder="SAVE10, FLAT500..." />
-        <button class="btn btn-outline btn-sm" onclick="applyCoupon()">Apply</button>
+        <input type="text" id="coupon-input" class="form-control" placeholder="Try: EARTHY10, CRAFT500..." />
+        <button class="btn btn-outline btn-sm" id="coupon-btn" onclick="applyCoupon()">Apply</button>
       </div>
       <div id="coupon-msg" class="coupon-msg"></div>
 
@@ -68,6 +69,7 @@
   buildNavbar('cart');
 
   let cartData = null;
+  let appliedDiscount = 0;
 
   async function loadCart() {
     try {
@@ -126,8 +128,26 @@
     `).join('');
 
     document.getElementById('summary-subtotal').textContent = formatPrice(subtotal);
-    document.getElementById('summary-total').textContent    = formatPrice(subtotal);
+    updateSummaryWithDiscount();
     document.getElementById('cart-badge') && (document.getElementById('cart-badge').textContent = items.length);
+  }
+
+  function updateSummaryWithDiscount() {
+    const subtotal = parseFloat(cartData?.subtotal || 0);
+    const total = subtotal - appliedDiscount;
+    
+    const discRow = document.getElementById('summary-discount-row');
+    const discVal = document.getElementById('summary-discount');
+    const totalVal = document.getElementById('summary-total');
+    
+    if (appliedDiscount > 0) {
+      discRow.style.display = '';
+      discVal.textContent = '− ' + formatPrice(appliedDiscount);
+    } else {
+      discRow.style.display = 'none';
+    }
+    
+    totalVal.textContent = formatPrice(total > 0 ? total : 0);
   }
 
   async function changeQty(productId, newQty) {
@@ -163,14 +183,53 @@
     }
   }
 
-  function applyCoupon() {
+  async function applyCoupon() {
     const code = document.getElementById('coupon-input').value.trim().toUpperCase();
     const msgEl = document.getElementById('coupon-msg');
-    if (!code) { msgEl.textContent = 'Please enter a coupon code.'; msgEl.style.color = 'var(--danger)'; return; }
-    // Store for checkout page
-    localStorage.setItem('couponCode', code);
-    msgEl.innerHTML = `✅ Coupon <strong>${code}</strong> will be applied at checkout.`;
-    msgEl.style.color = 'var(--success)';
+    const btn = document.getElementById('coupon-btn');
+
+    if (!code) { 
+      msgEl.textContent = 'Please enter a coupon code.'; 
+      msgEl.style.color = 'var(--danger)'; 
+      return; 
+    }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      const { ok, data } = await api.post('/orders/validate-coupon', { coupon_code: code });
+      
+      if (ok && data.success) {
+        appliedDiscount = data.discount_amount;
+        const label = data.discount_type === 'percent' ? `${data.discount_value}% off` : `₹${data.discount_value} off`;
+        
+        msgEl.innerHTML = `✅ <strong>${data.coupon_code}</strong> applied — ${label}! &nbsp;<a href="#" onclick="removeCoupon(); return false;" style="color:var(--danger); font-size:0.8rem;">Remove</a>`;
+        msgEl.style.color = 'var(--success)';
+        
+        localStorage.setItem('couponCode', code);
+        updateSummaryWithDiscount();
+      } else {
+        appliedDiscount = 0;
+        msgEl.textContent = data.message || 'Invalid coupon code.';
+        msgEl.style.color = 'var(--danger)';
+        updateSummaryWithDiscount();
+      }
+    } catch(e) {
+      msgEl.textContent = 'Failed to validate coupon.';
+      msgEl.style.color = 'var(--danger)';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+    }
+  }
+
+  function removeCoupon() {
+    appliedDiscount = 0;
+    document.getElementById('coupon-input').value = '';
+    document.getElementById('coupon-msg').textContent = '';
+    localStorage.removeItem('couponCode');
+    updateSummaryWithDiscount();
   }
 
   loadCart();

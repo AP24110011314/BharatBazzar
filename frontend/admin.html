@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — BharatBazzar</title>
+  <meta name="description" content="BharatBazzar admin dashboard — manage orders, view stats, and monitor users." />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Admin Layout ─────────────────────────────── */
+    .admin-wrapper {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - var(--navbar-h));
+    }
+
+    /* ── Sidebar ──────────────────────────────────── */
+    .admin-sidebar {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 28px 16px;
+      position: sticky;
+      top: var(--navbar-h);
+      height: calc(100vh - var(--navbar-h));
+      overflow-y: auto;
+    }
+
+    .sidebar-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 12px;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+    .sidebar-label:first-child { margin-top: 0; }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      margin-bottom: 2px;
+    }
+    .sidebar-link:hover {
+      background: var(--bg-input);
+      color: var(--primary-dark);
+    }
+    .sidebar-link.active {
+      background: var(--primary-glow);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+    .sidebar-link .icon { font-size: 1.1rem; }
+
+    /* ── Main Content ─────────────────────────────── */
+    .admin-main {
+      padding: 32px 28px;
+      background: var(--bg-body);
+    }
+
+    .admin-section { display: none; }
+    .admin-section.active { display: block; animation: fadeIn 0.3s ease; }
+
+    /* ── Stat Cards ───────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    .stat-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .stat-value {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-family: 'Lora', serif;
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .stat-card.danger .stat-value { color: var(--danger); }
+    .stat-card.success .stat-value { color: var(--success); }
+
+    /* ── Tables ───────────────────────────────────── */
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .table-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--bg-surface);
+    }
+    .table-head h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .table-head p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    thead th {
+      padding: 11px 18px;
+      text-align: left;
+      font-size: 0.73rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border-light);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border-light);
+      transition: background var(--transition);
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-surface); }
+    tbody td {
+      padding: 13px 18px;
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+    tbody td strong { color: var(--text-primary); font-weight: 600; }
+
+    /* ── Badges ───────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: capitalize;
+    }
+    .badge-pending    { background: #fef9c3; color: #854d0e; }
+    .badge-confirmed  { background: #dcfce7; color: #166534; }
+    .badge-shipped    { background: #dbeafe; color: #1e40af; }
+    .badge-delivered  { background: #d1fae5; color: #065f46; }
+    .badge-cancelled  { background: #fee2e2; color: #991b1b; }
+    .badge-completed  { background: #d1fae5; color: #065f46; }
+    .badge-failed     { background: #fee2e2; color: #991b1b; }
+    .badge-admin      { background: var(--primary-glow); color: var(--primary-dark); }
+    .badge-customer   { background: var(--bg-input); color: var(--text-muted); }
+
+    /* ── Rank indicator ───────────────────────────── */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px; height: 26px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--bg-input);
+      color: var(--text-muted);
+    }
+    .rank-badge.gold   { background: #fef08a; color: #713f12; }
+    .rank-badge.silver { background: #e2e8f0; color: #475569; }
+    .rank-badge.bronze { background: #fed7aa; color: #7c2d12; }
+
+    /* ── Section header ───────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-header h2 {
+      font-family: 'Lora', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .section-header p { color: var(--text-muted); font-size: 0.88rem; }
+
+    /* ── Loading skeleton ─────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-light) 50%, var(--bg-input) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Two-col grid ─────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 900px) {
+      .admin-wrapper { grid-template-columns: 1fr; }
+      .admin-sidebar {
+        position: static;
+        height: auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 12px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-label { display: none; }
+      .sidebar-link { width: auto; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="navbar-placeholder"></div>
+
+  <div class="admin-wrapper">
+
+    <!-- ── Sidebar ── -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-label">Overview</div>
+      <button class="sidebar-link active" id="nav-overview" onclick="showSection('overview')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+
+      <div class="sidebar-label">Data</div>
+      <button class="sidebar-link" id="nav-orders" onclick="showSection('orders')">
+        <span class="icon">📦</span> All Orders
+      </button>
+      <button class="sidebar-link" id="nav-products" onclick="showSection('products')">
+        <span class="icon">🏆</span> Top Products
+      </button>
+      <button class="sidebar-link" id="nav-users" onclick="showSection('users')">
+        <span class="icon">👥</span> User Summary
+      </button>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="admin-main">
+
+      <!-- Overview Section -->
+      <section class="admin-section active" id="section-overview">
+        <div class="section-header">
+          <div>
+            <h2>📊 Dashboard Overview</h2>
+            <p>Live snapshot of your store's performance</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadAll()">🔄 Refresh</button>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+          <!-- Filled by JS -->
+          <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value skeleton" style="width:120px;height:36px;"> </div></div>
+          <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Orders</div><div class="stat-value skeleton" style="width:60px;height:36px;"> </div></div>
+          <div class="stat-card"><div class="stat-icon">👤</div><div class="stat-label">Customers</div><div class="stat-value skeleton" style="width:60px;height:36px;"> </div></div>
+          <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-label">Active Products</div><div class="stat-value skeleton" style="width:60px;height:36px;"> </div></div>
+          <div class="stat-card danger"><div class="stat-icon">⚠️</div><div class="stat-label">Low Stock</div><div class="stat-value skeleton" style="width:60px;height:36px;"> </div></div>
+        </div>
+
+        <div class="two-col">
+          <!-- Recent Orders preview -->
+          <div class="table-wrap" id="overview-orders-wrap">
+            <div class="table-head">
+              <div><h3>📦 Recent Orders</h3><p>Latest 5 orders</p></div>
+              <button class="btn btn-outline btn-sm" onclick="showSection('orders')">View All</button>
+            </div>
+            <div id="overview-orders-body"><p style="padding:20px;color:var(--text-muted);">Loading…</p></div>
+          </div>
+
+          <!-- Top Products preview -->
+          <div class="table-wrap" id="overview-products-wrap">
+            <div class="table-head">
+              <div><h3>🏆 Top Products</h3><p>Best sellers by units sold</p></div>
+              <button class="btn btn-outline btn-sm" onclick="showSection('products')">View All</button>
+            </div>
+            <div id="overview-products-body"><p style="padding:20px;color:var(--text-muted);">Loading…</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- All Orders Section -->
+      <section class="admin-section" id="section-orders">
+        <div class="section-header">
+          <div>
+            <h2>📦 All Orders</h2>
+            <p>Complete order history across all customers</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <div><h3>Order List</h3></div>
+            <span id="orders-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>Customer</th>
+                  <th>Email</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading orders…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Top Products Section -->
+      <section class="admin-section" id="section-products">
+        <div class="section-header">
+          <div>
+            <h2>🏆 Top Products</h2>
+            <p>Best-selling products ranked by units sold</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadTopProducts()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <div><h3>Sales Rankings</h3></div>
+            <span id="products-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Units Sold</th>
+                  <th>Revenue</th>
+                  <th>Avg Rating</th>
+                  <th>Stock Left</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody">
+                <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- User Summary Section -->
+      <section class="admin-section" id="section-users">
+        <div class="section-header">
+          <div>
+            <h2>👥 User Summary</h2>
+            <p>All registered users with order and spending data</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadUsers()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <div><h3>Customer Directory</h3></div>
+            <span id="users-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Total Orders</th>
+                  <th>Total Spent</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // ── Guard: admin only ──────────────────────────
+    (function() {
+      const user = getUser();
+      if (!user) { window.location.href = 'index.html'; return; }
+      if (user.role !== 'admin') {
+        showToast('Access denied. Admins only.', 'error');
+        setTimeout(() => window.location.href = 'products.html', 1500);
+      }
+    })();
+
+    buildNavbar('admin');
+
+    // ── Section navigation ─────────────────────────
+    const sections = ['overview', 'orders', 'products', 'users'];
+    function showSection(name) {
+      sections.forEach(s => {
+        document.getElementById('section-' + s).classList.toggle('active', s === name);
+        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+      });
+      // Lazy-load on first visit
+      if (name === 'orders')   loadOrders();
+      if (name === 'products') loadTopProducts();
+      if (name === 'users')    loadUsers();
+    }
+
+    // ── Format helpers ─────────────────────────────
+    function fmtDate(str) {
+      if (!str) return '—';
+      return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    function statusBadge(status) {
+      return `<span class="badge badge-${(status||'pending').toLowerCase()}">${status || 'pending'}</span>`;
+    }
+    function rankBadge(i) {
+      const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      const label = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+      return `<span class="rank-badge ${cls}">${label}</span>`;
+    }
+
+    // ── Load Stats ─────────────────────────────────
+    async function loadStats() {
+      try {
+        const { ok, data } = await api.get('/admin/stats');
+        if (!ok) throw new Error(data.message);
+        const s = data.stats;
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card success">
+            <div class="stat-icon">💰</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">${formatPrice(s.total_revenue)}</div>
+            <div class="stat-sub">From confirmed orders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value">${s.total_orders}</div>
+            <div class="stat-sub">All time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👤</div>
+            <div class="stat-label">Customers</div>
+            <div class="stat-value">${s.total_users}</div>
+            <div class="stat-sub">Registered users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🛍️</div>
+            <div class="stat-label">Active Products</div>
+            <div class="stat-value">${s.total_products}</div>
+            <div class="stat-sub">Listed in store</div>
+          </div>
+          <div class="stat-card ${s.low_stock > 0 ? 'danger' : 'success'}">
+            <div class="stat-icon">${s.low_stock > 0 ? '⚠️' : '✅'}</div>
+            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-value">${s.low_stock}</div>
+            <div class="stat-sub">${s.low_stock > 0 ? 'Needs restocking' : 'All stocked up'}</div>
+          </div>
+        `;
+      } catch (e) {
+        showToast('Failed to load stats: ' + e.message, 'error');
+      }
+    }
+
+    // ── Load Orders ────────────────────────────────
+    let ordersLoaded = false;
+    async function loadOrders() {
+      if (ordersLoaded) return;
+      ordersLoaded = true;
+      try {
+        const { ok, data } = await api.get('/admin/orders');
+        if (!ok) throw new Error(data.message);
+        const orders = data.orders || [];
+        document.getElementById('orders-count').textContent = `${orders.length} orders`;
+
+        // Overview preview (latest 5)
+        const preview = orders.slice(0, 5);
+        document.getElementById('overview-orders-body').innerHTML = preview.length ? `
+          <table><thead><tr><th>#</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>${preview.map(o => `
+            <tr>
+              <td><strong>#${o.order_id}</strong></td>
+              <td>${o.user_name}</td>
+              <td>${formatPrice(o.total_amount)}</td>
+              <td>${statusBadge(o.status)}</td>
+            </tr>`).join('')}</tbody></table>` : '<p style="padding:20px;color:var(--text-muted);">No orders yet.</p>';
+
+        // Full table
+        document.getElementById('orders-tbody').innerHTML = orders.length
+          ? orders.map(o => `
+            <tr>
+              <td><strong>#${o.order_id}</strong></td>
+              <td>${o.user_name}</td>
+              <td style="color:var(--text-muted);font-size:0.82rem;">${o.email}</td>
+              <td><strong>${formatPrice(o.total_amount)}</strong></td>
+              <td>
+                <select class="form-control" style="font-size:0.75rem; padding:2px 6px; height:auto; width:110px;" 
+                        onchange="updateStatus(${o.order_id}, this.value)">
+                  <option value="pending"   ${o.status==='pending'?'selected':''}>Pending</option>
+                  <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Confirmed</option>
+                  <option value="shipped"   ${o.status==='shipped'?'selected':''}>Shipped</option>
+                  <option value="delivered" ${o.status==='delivered'?'selected':''}>Delivered</option>
+                  <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Cancelled</option>
+                </select>
+              </td>
+              <td>${statusBadge(o.payment_status || 'pending')}</td>
+              <td>${fmtDate(o.created_at)}</td>
+            </tr>`).join('')
+          : '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No orders found.</td></tr>';
+      } catch (e) {
+        ordersLoaded = false;
+        showToast('Failed to load orders: ' + e.message, 'error');
+      }
+    }
+
+    async function updateStatus(orderId, newStatus) {
+      try {
+        const { ok, data } = await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+        if (ok) {
+          showToast(data.message, 'success');
+          // Optionally refresh local data or just stats
+          loadStats();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast('Error updating status', 'error');
+      }
+    }
+
+    // ── Load Top Products ──────────────────────────
+    let productsLoaded = false;
+    async function loadTopProducts() {
+      if (productsLoaded) return;
+      productsLoaded = true;
+      try {
+        const { ok, data } = await api.get('/admin/top-products?limit=20');
+        if (!ok) throw new Error(data.message);
+        const products = data.products || [];
+        document.getElementById('products-count').textContent = `${products.length} products`;
+
+        // Overview preview (top 5)
+        document.getElementById('overview-products-body').innerHTML = products.slice(0, 5).length ? `
+          <table><thead><tr><th>Rank</th><th>Product</th><th>Sold</th></tr></thead>
+          <tbody>${products.slice(0, 5).map((p, i) => `
+            <tr>
+              <td>${rankBadge(i)}</td>
+              <td>${p.product_name}</td>
+              <td><strong>${p.total_sold}</strong></td>
+            </tr>`).join('')}</tbody></table>`
+          : '<p style="padding:20px;color:var(--text-muted);">No sales data yet.</p>';
+
+        // Full table
+        document.getElementById('products-tbody').innerHTML = products.length
+          ? products.map((p, i) => `
+            <tr>
+              <td>${rankBadge(i)}</td>
+              <td><strong>${p.product_name}</strong></td>
+              <td style="color:var(--text-muted);">${p.category || '—'}</td>
+              <td>${formatPrice(p.price)}</td>
+              <td><strong>${p.total_sold}</strong> units</td>
+              <td>${formatPrice(p.total_revenue)}</td>
+              <td>${p.avg_rating ? parseFloat(p.avg_rating).toFixed(1) + ' ★' : '—'}</td>
+              <td>${p.stock_remaining ?? '—'}</td>
+            </tr>`).join('')
+          : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No sales data yet.</td></tr>';
+      } catch (e) {
+        productsLoaded = false;
+        showToast('Failed to load products: ' + e.message, 'error');
+      }
+    }
+
+    // ── Load Users ─────────────────────────────────
+    let usersLoaded = false;
+    async function loadUsers() {
+      if (usersLoaded) return;
+      usersLoaded = true;
+      try {
+        const { ok, data } = await api.get('/admin/user-summary');
+        if (!ok) throw new Error(data.message);
+        const users = data.users || [];
+        document.getElementById('users-count').textContent = `${users.length} users`;
+        document.getElementById('users-tbody').innerHTML = users.length
+          ? users.map(u => `
+            <tr>
+              <td><strong>#${u.user_id}</strong></td>
+              <td>${u.name}</td>
+              <td style="color:var(--text-muted);font-size:0.82rem;">${u.email}</td>
+              <td>${u.total_orders}</td>
+              <td><strong>${formatPrice(u.total_spent)}</strong></td>
+            </tr>`).join('')
+          : '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No users found.</td></tr>';
+      } catch (e) {
+        usersLoaded = false;
+        showToast('Failed to load users: ' + e.message, 'error');
+      }
+    }
+
+    // ── Load all for overview ──────────────────────
+    function loadAll() {
+      ordersLoaded = false;
+      productsLoaded = false;
+      usersLoaded = false;
+      loadStats();
+      loadOrders();
+      loadTopProducts();
+    }
+
+    // ── Init ───────────────────────────────────────
+    loadAll();
+  </script>
+</body>
+</html>

@@ -8,9 +8,9 @@ USE shopdb;
 -- Users  (passwords are bcrypt hashes of 'password123')
 -- --------------------------------------------------------
 INSERT INTO Users (name, email, password, phone, role) VALUES
-  ('Alice Johnson',   'alice@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhy1', '9876543210', 'customer'),
-  ('Bob Smith',       'bob@example.com',   '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhy1', '9123456780', 'customer'),
-  ('Admin User',      'admin@shop.com',    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhy1', '9000000001', 'admin');
+  ('Alice Johnson',   'alice@example.com', '$2a$10$qyVJornbqFIiUQ68ekg6LeWMc7ntmjZ4dW/KYQc12qIfCx4erXT6a', '9876543210', 'customer'),
+  ('Bob Smith',       'bob@example.com',   '$2a$10$qyVJornbqFIiUQ68ekg6LeWMc7ntmjZ4dW/KYQc12qIfCx4erXT6a', '9123456780', 'customer'),
+  ('Admin User',      'admin@shop.com',    '$2a$10$qyVJornbqFIiUQ68ekg6LeWMc7ntmjZ4dW/KYQc12qIfCx4erXT6a', '9000000001', 'admin');
 
 -- --------------------------------------------------------
 -- Addresses

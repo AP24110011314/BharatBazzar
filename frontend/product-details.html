@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BharatBazzar — Product Details</title>
+  <meta name="description" content="View handcrafted artisan product details and customer reviews." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="container" style="padding-top:24px; padding-bottom:60px;">
+  <div id="product-detail-container" class="hidden">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:40px;">
+      <!-- Product Image -->
+      <div class="product-img-large" style="border-radius:var(--radius-xl); overflow:hidden; box-shadow:var(--shadow-md);">
+        <img id="p-image" src="" alt="" style="width:100%; height:auto; display:block;" />
+      </div>
+
+      <!-- Product Info -->
+      <div class="product-info-panel">
+        <div id="p-category" class="product-badge" style="position:static; display:inline-block; margin-bottom:12px;"></div>
+        <div id="p-brand" class="product-brand" style="font-size:0.85rem; margin-bottom:4px;"></div>
+        <h1 id="p-name" style="font-family:'Lora', serif; font-size:2.2rem; margin-bottom:12px;"></h1>
+        
+        <div class="product-rating" style="font-size:1rem; margin-bottom:20px;">
+          <span id="p-stars" class="stars"></span>
+          <span id="p-rating-text" style="margin-left:8px;"></span>
+        </div>
+
+        <div id="p-price" class="product-price" style="font-size:1.8rem; margin-bottom:24px;"></div>
+        
+        <div style="margin-bottom:24px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:8px;">Description</h3>
+          <p id="p-description" style="color:var(--text-secondary); line-height:1.7;"></p>
+        </div>
+
+        <div id="p-stock-status" style="margin-bottom:24px; font-weight:600;"></div>
+
+        <button id="add-to-cart-btn" class="btn btn-primary btn-lg btn-block" onclick="handleAddToCart()">
+          🛒 Add to Basket
+        </button>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div style="margin-top:60px; border-top:1px solid var(--border-light); padding-top:40px;">
+      <h2 style="font-family:'Lora', serif; margin-bottom:24px;">Customer Reviews</h2>
+      <div id="reviews-container">
+        <p class="text-muted">No reviews yet for this product.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-state" class="text-center" style="padding:100px 0;">
+    <div class="spinner" style="width:40px; height:40px; margin:0 auto 16px;"></div>
+    <p class="text-muted">Gathering artisan details...</p>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
+<div id="toast-container" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script>
+  buildNavbar('products');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
+
+  if (!productId) {
+    window.location.href = 'products.html';
+  }
+
+  let product = null;
+
+  async function loadProductDetails() {
+    try {
+      const { ok, data } = await api.get(`/products/${productId}`);
+      if (!ok) { showToast(data.message, 'error'); return; }
+
+      product = data.product;
+      renderProduct(data.product);
+      renderReviews(data.reviews || []);
+
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('product-detail-container').classList.remove('hidden');
+    } catch(e) {
+      showToast('Error loading product', 'error');
+    }
+  }
+
+  function renderProduct(p) {
+    document.title = `${p.name} — BharatBazzar`;
+    document.getElementById('p-image').src = p.image_url || 'https://via.placeholder.com/600x600?text=No+Image';
+    document.getElementById('p-image').alt = p.name;
+    document.getElementById('p-name').textContent = p.name;
+    document.getElementById('p-brand').textContent = p.brand || 'Handcrafted';
+    document.getElementById('p-category').textContent = p.category;
+    document.getElementById('p-price').textContent = formatPrice(p.price);
+    document.getElementById('p-description').textContent = p.description;
+    document.getElementById('p-stars').textContent = stars(p.avg_rating);
+    document.getElementById('p-rating-text').textContent = `(${Number(p.avg_rating).toFixed(1)}) · ${p.review_count} reviews`;
+    
+    const stockEl = document.getElementById('p-stock-status');
+    if (p.stock > 0) {
+      stockEl.innerHTML = `<span style="color:var(--success)">🌿 In stock (${p.stock} available)</span>`;
+      document.getElementById('add-to-cart-btn').disabled = false;
+    } else {
+      stockEl.innerHTML = `<span style="color:var(--danger)">✕ Out of stock</span>`;
+      document.getElementById('add-to-cart-btn').disabled = true;
+      document.getElementById('add-to-cart-btn').textContent = '✕ Out of Stock';
+    }
+  }
+
+  function renderReviews(reviews) {
+    const container = document.getElementById('reviews-container');
+    if (reviews.length === 0) return;
+
+    container.innerHTML = reviews.map(r => `
+      <div style="padding:20px 0; border-bottom:1px solid var(--border-light);">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <div>
+            <div class="stars" style="font-size:0.9rem; margin-bottom:4px;">${stars(r.rating)}</div>
+            <strong style="font-size:1rem; color:var(--text-primary);">${r.title || 'Review'}</strong>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.85rem; font-weight:600; color:var(--text-primary);">${r.reviewer}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${new Date(r.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>
+        <p style="font-size:0.92rem; color:var(--text-secondary); line-height:1.6;">${r.body}</p>
+      </div>
+    `).join('');
+  }
+
+  async function handleAddToCart() {
+    if (!getToken()) {
+      showToast('Please login to add items to basket', 'info');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+      return;
+    }
+
+    try {
+      const { ok, data } = await api.post('/cart/add', { product_id: productId, quantity: 1 });
+      if (ok) {
+        showToast('Added to basket! 🛒', 'success');
+        updateCartBadge();
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch(e) {
+      showToast('Failed to add to basket', 'error');
+    }
+  }
+
+  loadProductDetails();
+</script>
+</body>
+</html>

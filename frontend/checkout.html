@@ -124,7 +124,7 @@
             <button onclick="applyCoupon()" class="btn btn-outline">Apply</button>
           </div>
           <div id="coupon-msg" class="coupon-msg"></div>
-          <div class="text-muted mt-1" style="font-size:0.78rem;">Available: SAVE10, FLAT500, WELCOME20</div>
+          <div class="text-muted mt-1" style="font-size:0.78rem;">Try: EARTHY10 (10% off) &nbsp;·&nbsp; CRAFT500 (₹500 off) &nbsp;·&nbsp; WELCOME15 (15% off)</div>
         </div>
 
       </div>
@@ -169,6 +169,7 @@
   let selectedPaymentMethod = 'upi';
   let cartItems = [];
   let subtotal = 0;
+  let appliedDiscount = 0;  // tracks discount from validated coupon
 
   // Pre-fill coupon from cart page
   const savedCoupon = localStorage.getItem('couponCode');
@@ -276,13 +277,65 @@
   }
 
   // ── Coupon ──────────────────────────────────────────────────
-  function applyCoupon() {
-    const code = document.getElementById('coupon-input').value.trim().toUpperCase();
-    const msgEl = document.getElementById('coupon-msg');
-    if (!code) { msgEl.textContent = 'Enter a coupon code.'; msgEl.style.color = 'var(--danger)'; return; }
-    msgEl.innerHTML = `✅ Coupon <strong>${code}</strong> applied — discount will reflect in final total.`;
-    msgEl.style.color = 'var(--success)';
-    localStorage.setItem('couponCode', code);
+  async function applyCoupon() {
+    const code   = document.getElementById('coupon-input').value.trim().toUpperCase();
+    const msgEl  = document.getElementById('coupon-msg');
+    const applyBtn = document.querySelector('.coupon-input .btn');
+
+    if (!code) {
+      msgEl.textContent  = 'Please enter a coupon code.';
+      msgEl.style.color  = 'var(--danger)';
+      return;
+    }
+
+    applyBtn.disabled    = true;
+    applyBtn.textContent = '...';
+
+    try {
+      const { ok, data } = await api.post('/orders/validate-coupon', { coupon_code: code });
+
+      if (ok && data.success) {
+        appliedDiscount = data.discount_amount;
+
+        const label = data.discount_type === 'percent'
+          ? `${data.discount_value}% off`
+          : `₹${data.discount_value} off`;
+
+        msgEl.innerHTML   = `✅ <strong>${data.coupon_code}</strong> applied — ${label}! &nbsp;<a href="#" onclick="removeCoupon(); return false;" style="color:var(--danger); font-size:0.8rem;">Remove</a>`;
+        msgEl.style.color = 'var(--success)';
+
+        // Live-update the order summary
+        document.getElementById('co-discount').textContent      = '− ' + formatPrice(appliedDiscount);
+        document.getElementById('co-discount-row').style.display = '';
+        document.getElementById('co-total').textContent         = formatPrice(subtotal - appliedDiscount);
+
+        localStorage.setItem('couponCode', code);
+      } else {
+        appliedDiscount = 0;
+        msgEl.textContent  = data.message || 'Invalid coupon code.';
+        msgEl.style.color  = 'var(--danger)';
+        resetTotalDisplay();
+      }
+    } catch(e) {
+      msgEl.textContent  = 'Could not validate coupon. Try again.';
+      msgEl.style.color  = 'var(--danger)';
+    }
+
+    applyBtn.disabled    = false;
+    applyBtn.textContent = 'Apply';
+  }
+
+  function removeCoupon() {
+    appliedDiscount = 0;
+    document.getElementById('coupon-input').value = '';
+    document.getElementById('coupon-msg').textContent = '';
+    localStorage.removeItem('couponCode');
+    resetTotalDisplay();
+  }
+
+  function resetTotalDisplay() {
+    document.getElementById('co-discount-row').style.display = 'none';
+    document.getElementById('co-total').textContent = formatPrice(subtotal);
   }
 
   // ── Place Order ─────────────────────────────────────────────
@@ -327,8 +380,16 @@
   }
 
   // Init
-  loadAddresses();
-  loadCartSummary();
+  (async () => {
+    await loadAddresses();
+    await loadCartSummary();
+    
+    // Auto-apply coupon if it was pre-filled
+    const couponInput = document.getElementById('coupon-input');
+    if (couponInput && couponInput.value.trim()) {
+      applyCoupon();
+    }
+  })();
 </script>
 </body>
 </html>

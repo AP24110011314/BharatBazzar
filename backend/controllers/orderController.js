@@ -1,5 +1,68 @@
 const db = require('../config/db');
 
+// POST /orders/validate-coupon  — validates a coupon against the cart subtotal
+const validateCoupon = async (req, res) => {
+  try {
+    const { coupon_code } = req.body;
+    if (!coupon_code || !coupon_code.trim()) {
+      return res.status(400).json({ success: false, message: 'Coupon code is required.' });
+    }
+
+    // Fetch coupon
+    const [coupons] = await db.query(
+      'SELECT * FROM Coupons WHERE code = ? AND is_active = 1',
+      [coupon_code.trim().toUpperCase()]
+    );
+
+    if (coupons.length === 0) {
+      return res.status(404).json({ success: false, message: 'Invalid or expired coupon code.' });
+    }
+
+    const coupon = coupons[0];
+
+    // Get cart subtotal for this user
+    const [cartRows] = await db.query(
+      `SELECT COALESCE(SUM(ci.quantity * p.price), 0) AS subtotal
+       FROM Cart c
+       JOIN Cart_Items ci ON ci.cart_id = c.cart_id
+       JOIN Products   p  ON p.product_id = ci.product_id
+       WHERE c.user_id = ?`,
+      [req.user.user_id]
+    );
+
+    const subtotal = parseFloat(cartRows[0].subtotal);
+
+    if (subtotal < parseFloat(coupon.min_order_amt)) {
+      return res.status(400).json({
+        success: false,
+        message: `Minimum order amount for this coupon is ₹${parseFloat(coupon.min_order_amt).toFixed(2)}.`,
+      });
+    }
+
+    let discount = 0;
+    if (coupon.discount_type === 'percent') {
+      discount = subtotal * (parseFloat(coupon.discount_value) / 100);
+    } else {
+      discount = parseFloat(coupon.discount_value);
+    }
+    discount = Math.min(discount, subtotal);
+
+    return res.json({
+      success: true,
+      message: 'Coupon applied successfully!',
+      coupon_code: coupon.code,
+      discount_type: coupon.discount_type,
+      discount_value: parseFloat(coupon.discount_value),
+      discount_amount: parseFloat(discount.toFixed(2)),
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      total_after_discount: parseFloat((subtotal - discount).toFixed(2)),
+    });
+  } catch (err) {
+    console.error('ValidateCoupon error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
 // POST /order/place  — calls PlaceOrder stored procedure
 const placeOrder = async (req, res) => {
   try {
@@ -63,7 +126,7 @@ const getOrders = async (req, res) => {
     // Enrich each order with its line items
     for (const order of orders) {
       const [items] = await db.query(
-        `SELECT oi.quantity, oi.unit_price, p.name, p.image_url,
+        `SELECT oi.product_id, oi.quantity, oi.unit_price, p.name, p.image_url,
                 (oi.quantity * oi.unit_price) AS line_total
          FROM Order_Items oi JOIN Products p ON p.product_id = oi.product_id
          WHERE oi.order_id = ?`,
@@ -99,7 +162,7 @@ const getOrderById = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ success: false, message: 'Order not found.' });
 
     const [items] = await db.query(
-      `SELECT oi.quantity, oi.unit_price, p.name, p.image_url, p.brand
+      `SELECT oi.product_id, oi.quantity, oi.unit_price, p.name, p.image_url, p.brand
        FROM Order_Items oi JOIN Products p ON p.product_id = oi.product_id
        WHERE oi.order_id = ?`,
       [id]
@@ -150,4 +213,4 @@ const addAddress = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, getOrders, getOrderById, getAddresses, addAddress };
+module.exports = { placeOrder, getOrders, getOrderById, getAddresses, addAddress, validateCoupon };

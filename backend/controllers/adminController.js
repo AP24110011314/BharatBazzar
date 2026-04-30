@@ -76,4 +76,30 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-module.exports = { getTopProducts, getUserSummary, getDashboardStats, getAllOrders };
+// PUT /admin/orders/:id/status
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status value.' });
+    }
+
+    const [result] = await db.query(
+      'UPDATE Orders SET status = ? WHERE order_id = ?',
+      [status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    return res.json({ success: true, message: `Order #${id} status updated to ${status}.` });
+  } catch (err) {
+    console.error('UpdateOrderStatus error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+module.exports = { getTopProducts, getUserSummary, getDashboardStats, getAllOrders, updateOrderStatus };

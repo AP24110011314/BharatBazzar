@@ -118,7 +118,8 @@ function hideLoader() {
 // ── Navbar builder ────────────────────────────────────────────
 function buildNavbar(activePage) {
   const user = getUser();
-  const cartCount = parseInt(localStorage.getItem('cartCount') || '0');
+  const cartCount     = parseInt(localStorage.getItem('cartCount')     || '0');
+  const wishlistCount = parseInt(localStorage.getItem('wishlistCount') || '0');
   const nav = `
     <nav class="navbar">
       <div class="container">
@@ -127,6 +128,10 @@ function buildNavbar(activePage) {
           <a href="products.html" class="nav-link ${activePage==='products'?'active':''}">
             <span>🏪</span><span>Products</span>
           </a>
+          <a href="wishlist.html" class="nav-link ${activePage==='wishlist'?'active':''}">
+            <span>♡</span><span>Wishlist</span>
+            ${wishlistCount > 0 ? `<span class="cart-badge wishlist-badge" id="wishlist-badge">${wishlistCount}</span>` : '<span class="cart-badge wishlist-badge" id="wishlist-badge" style="display:none">0</span>'}
+          </a>
           <a href="cart.html" class="nav-link ${activePage==='cart'?'active':''}">
             <span>🛒</span><span>Cart</span>
             ${cartCount > 0 ? `<span class="cart-badge" id="cart-badge">${cartCount}</span>` : '<span class="cart-badge" id="cart-badge" style="display:none">0</span>'}
@@ -134,6 +139,10 @@ function buildNavbar(activePage) {
           <a href="orders.html" class="nav-link ${activePage==='orders'?'active':''}">
             <span>📦</span><span>Orders</span>
           </a>
+          ${user && user.role === 'admin' ? `
+          <a href="admin.html" class="nav-link ${activePage==='admin'?'active':''}">
+            <span>🛠️</span><span>Admin</span>
+          </a>` : ''}
         </div>
         <div class="nav-user">
           ${user ? `
@@ -147,6 +156,20 @@ function buildNavbar(activePage) {
   `;
   const placeholder = document.getElementById('navbar-placeholder');
   if (placeholder) placeholder.innerHTML = nav;
+}
+
+async function updateWishlistBadge() {
+  try {
+    if (!getToken()) return;
+    const { data } = await api.get('/wishlist/ids');
+    const count = data.ids?.length || 0;
+    localStorage.setItem('wishlistCount', count);
+    const badge = document.getElementById('wishlist-badge');
+    if (badge) {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  } catch(e) {}
 }
 
 async function updateCartBadge() {

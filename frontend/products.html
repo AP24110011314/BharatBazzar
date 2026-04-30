@@ -105,6 +105,9 @@
   let activeCategory = '';
   let searchTimer = null;
 
+  // ── Wishlist IDs (declared early so renderProducts can access it) ──
+  let wishlistIds = new Set();
+
   // ── Load Categories ─────────────────────────────────────────
   async function loadCategories() {
     const { data } = await api.get('/products/categories');
@@ -174,15 +177,23 @@
     grid.innerHTML = products.map(p => `
       <div class="product-card" id="prod-${p.product_id}">
         <div class="product-img-wrap">
-          <img src="${p.image_url || 'https://via.placeholder.com/400x300?text=No+Image'}"
-               alt="${p.name}"
-               onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'" />
+          <a href="product-details.html?id=${p.product_id}">
+            <img src="${p.image_url || 'https://via.placeholder.com/400x300?text=No+Image'}"
+                 alt="${p.name}"
+                 onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'" />
+          </a>
           <span class="product-badge">${p.category}</span>
           ${p.stock === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+          <button class="wishlist-btn ${wishlistIds.has(p.product_id) ? 'wishlisted' : ''}"
+                  id="wbtn-${p.product_id}"
+                  onclick="toggleWishlist(${p.product_id}, '${p.name.replace(/'/g, "\\'")}')"
+                  title="${wishlistIds.has(p.product_id) ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+            ${wishlistIds.has(p.product_id) ? '♥' : '♡'}
+          </button>
         </div>
         <div class="product-body">
           <div class="product-brand">${p.brand || ''}</div>
-          <div class="product-name">${p.name}</div>
+          <a href="product-details.html?id=${p.product_id}" class="product-name" style="text-decoration:none; display:block;">${p.name}</a>
           <div class="product-rating">
             <span class="stars">${stars(p.avg_rating)}</span>
             <span>(${Number(p.avg_rating).toFixed(1)}) · ${p.review_count} reviews</span>
@@ -198,7 +209,7 @@
           <button
             class="btn btn-primary btn-sm btn-block"
             style="margin-top:12px;"
-            onclick="addToCart(${p.product_id}, '${p.name.replace(/'/g,"\\'")}', ${p.stock})"
+            onclick="addToCart(${p.product_id}, '${p.name.replace(/'/g, "\\'") }', ${p.stock})"
             ${p.stock === 0 ? 'disabled' : ''}>
             ${p.stock === 0 ? '✕ Out of Stock' : '🛒 Add to Basket'}
           </button>
@@ -222,6 +233,35 @@
     }
   }
 
+  // ── Wishlist ───────────────────────────────────────────────
+  async function loadWishlistIds() {
+    try {
+      const { data } = await api.get('/wishlist/ids');
+      wishlistIds = new Set(data.ids || []);
+    } catch(e) { wishlistIds = new Set(); }
+  }
+
+  async function toggleWishlist(productId, name) {
+    const btn = document.getElementById(`wbtn-${productId}`);
+    const inWishlist = wishlistIds.has(productId);
+    try {
+      if (inWishlist) {
+        await api.delete('/wishlist/remove', { product_id: productId });
+        wishlistIds.delete(productId);
+        if (btn) { btn.textContent = '♡'; btn.classList.remove('wishlisted'); btn.title = 'Add to Wishlist'; }
+        showToast(`${name} removed from wishlist`, 'info');
+      } else {
+        await api.post('/wishlist/add', { product_id: productId });
+        wishlistIds.add(productId);
+        if (btn) { btn.textContent = '♥'; btn.classList.add('wishlisted'); btn.title = 'Remove from Wishlist'; }
+        showToast(`${name} added to wishlist ♥`, 'success');
+      }
+      updateWishlistBadge();
+    } catch(e) {
+      showToast('Wishlist action failed', 'error');
+    }
+  }
+
   function applyFilters() { loadProducts(); }
 
   function clearFilters() {
@@ -240,9 +280,13 @@
   document.getElementById('sort-select').addEventListener('change', loadProducts);
 
   // Init
-  loadCategories();
-  loadProducts();
-  updateCartBadge();
+  (async () => {
+    await loadWishlistIds();
+    loadCategories();
+    loadProducts();
+    updateCartBadge();
+    updateWishlistBadge();
+  })();
 </script>
 </body>
 </html>

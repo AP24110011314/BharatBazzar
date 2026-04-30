@@ -1224,3 +1224,128 @@ select.form-control {
   .nav-link span:last-child { display: none; }
   .cart-item-img { width: 70px; height: 70px; }
 }
+
+/* ── Modals ────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-family: 'Lora', serif; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+
+.modal-body { padding: 24px; }
+.modal-footer {
+  padding: 16px 24px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.close-modal {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.close-modal:hover { color: var(--danger); }
+
+/* ── Star Rating Input ────────────────────────────── */
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.star-rating input { display: none; }
+.star-rating label {
+  font-size: 1.8rem;
+  color: var(--border);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: #f1c40f;
+}
+
+
+/* ── Wishlist Heart Button ─────────────────────────── */
+.wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background var(--transition),
+    color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition);
+  z-index: 5;
+  padding: 0;
+}
+
+.wishlist-btn:hover {
+  background: #fff;
+  color: #e05a5a;
+  transform: scale(1.15);
+  box-shadow: var(--shadow-md);
+}
+
+.wishlist-btn.wishlisted {
+  background: #fff0f0;
+  color: #e05a5a;
+}
+
+.wishlist-btn.wishlisted:hover {
+  background: #ffe0e0;
+  transform: scale(1.1);
+}
+
+/* Wishlist navbar badge — rose/red tint to differentiate from cart */
+.wishlist-badge {
+  background: #e05a5a !important;
+}
+
