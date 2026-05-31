@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-# BharatBazzar
+# 🛒 BharatBazzar — Online Shopping System
+
 A full-stack e-commerce platform featuring a normalized MySQL database with advanced SQL capabilities (triggers, stored procedures), a Node.js/Express REST API, and a beautifully designed, responsive vanilla JS frontend.
-=======
-=======
->>>>>>> d5e106a (initial commit)
-# 🛒 ShopDB — Online Shopping System
 
 > **DBMS Course Project** | Full-stack mini e-commerce system (MySQL + Node.js/Express + HTML/CSS/JS)
 
@@ -263,7 +258,4 @@ User registers / logs in
         ↓
  User views Order History (GET /api/orders)
 ```
-<<<<<<< HEAD
->>>>>>> d5e106a (initial commit)
-=======
->>>>>>> d5e106a (initial commit)
+
