@@ -175,7 +175,7 @@ INSERT INTO Products (category_id, name, description, price, image_url, brand, i
   (6, 'Woven Seagrass Storage Basket',
    'Handwoven seagrass basket with braided leather handles. Multi-purpose — great for blankets, toys, or laundry. 35 x 30 cm.',
    1499.00,
-   'https://images.unsplash.com/photo-1595418518533-91bcd4c2a0df?w=600&q=80',
+   'images/woven-seagrass-basket.png',
    'Knotted Stories', 1);
 
 -- --------------------------------------------------------
