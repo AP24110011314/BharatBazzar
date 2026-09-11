@@ -5,6 +5,10 @@ A full-stack e-commerce platform featuring a normalized MySQL database with adva
 > **DBMS Course Project** | Full-stack mini e-commerce system (MySQL + Node.js/Express + HTML/CSS/JS)
 
 ---
+## 🖥️ Project Preview
+
+![BharatBazzar Login](screenshots/login.png)
+----
 
 ## 📁 Project Structure
 
@@ -151,6 +155,56 @@ cd frontend
 npx serve .
 # Then open http://localhost:3000
 ```
+
+---
+---
+
+## 🖥️ Application Screenshots
+
+### 🔐 Login & Registration
+
+![Login Page](screenshots/login.png)
+
+### 🛍️ Product Browsing & Filtering
+
+![Product Filtering](screenshots/filter.png)
+
+### 🛒 Shopping Cart
+
+![Shopping Cart](screenshots/basket.png)
+
+### 💳 Checkout
+
+<table>
+<tr>
+<td width="50%">
+
+**Checkout — Address & Order Details**
+
+<img src="screenshots/checkout.png" width="100%">
+
+</td>
+<td width="50%">
+
+**Checkout — Payment / Final Step**
+
+<img src="screenshots/checkout2.png" width="100%">
+
+</td>
+</tr>
+</table>
+
+### ✅ Order Confirmation
+
+![Order Confirmation](screenshots/confirmation.png)
+
+### 📊 Dashboard
+
+![Dashboard](screenshots/dasbord.png)
+
+### 👨‍💼 Admin Dashboard
+
+![Admin Dashboard](screenshots/admin.png)
 
 ---
 
