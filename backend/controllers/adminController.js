@@ -570,6 +570,9 @@ const deleteUser = async (req, res) => {
 
     return res.json({ success: true, message: `User #${id} deleted.` });
   } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || /foreign key/i.test(err.message)) {
+      return res.status(400).json({ success: false, message: 'Cannot delete user — they have existing orders. Remove or reassign orders first.' });
+    }
     console.error('DeleteUser error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }

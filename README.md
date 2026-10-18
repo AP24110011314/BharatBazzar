@@ -137,7 +137,7 @@ npm start
 You should see:
 ```
 ✅  MySQL connected successfully
-🛒  ShopDB Backend running at http://localhost:5000
+🛒  ShopDB Backend running at http://localhost:5001
 ```
 
 ---
@@ -222,7 +222,7 @@ npx serve .
 1. **Login** → Open `index.html`, login as `alice@example.com` / `password123`
 2. **Browse Products** → View electronics, books, clothing; use search and filters
 3. **Add to Cart** → Add "Clean Code" book and "Samsung Galaxy S23" to cart
-4. **View Cart** → Adjust quantities, optionally apply coupon `SAVE10`
+4. **View Cart** → Adjust quantities, optionally apply coupon `EARTHY10`
 5. **Checkout** → Select address, choose payment method (e.g. UPI), place order
 6. **Verify** → Check `orders.html` — order should appear with status `confirmed`
 7. **Inventory Updated** → In MySQL, run:
@@ -262,9 +262,9 @@ npx serve .
 
 | Code | Type | Value | Min Order |
 |---|---|---|---|
-| SAVE10 | 10% off | 10% | ₹500 |
-| FLAT500 | Flat ₹500 off | ₹500 | ₹5,000 |
-| WELCOME20 | 20% off | 20% | ₹1,000 |
+| EARTHY10 | 10% off | 10% | ₹500 |
+| CRAFT500 | Flat ₹500 off | ₹500 | ₹3,000 |
+| WELCOME15 | 15% off | 15% | ₹1,000 |
 
 ---
 

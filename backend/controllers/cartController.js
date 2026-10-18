@@ -44,9 +44,18 @@ const addToCart = async (req, res) => {
       [product_id]
     );
     if (prod.length === 0) return res.status(404).json({ success: false, message: 'Product not found.' });
-    if (prod[0].stock < quantity) return res.status(400).json({ success: false, message: 'Insufficient stock.' });
 
     const cartId = await getCartId(req.user.user_id);
+
+    // Check existing quantity in cart
+    const [existing] = await db.query(
+      'SELECT quantity FROM Cart_Items WHERE cart_id = ? AND product_id = ?',
+      [cartId, product_id]
+    );
+    const currentQty = existing.length > 0 ? existing[0].quantity : 0;
+    if (prod[0].stock < currentQty + quantity) {
+      return res.status(400).json({ success: false, message: 'Insufficient stock.' });
+    }
 
     // Upsert cart item
     await db.query(
