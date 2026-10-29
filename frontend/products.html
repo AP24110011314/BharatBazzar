@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BharatBazzar — Artisan Marketplace</title>
   <meta name="description" content="Discover handcrafted pottery, textiles, natural skincare, woodcraft, and more from skilled artisans across India." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -36,6 +38,11 @@
       </select>
     </div>
   </div>
+
+  <!-- Mobile Filter Toggle Button -->
+  <button type="button" class="btn btn-outline mobile-filter-toggle" onclick="toggleMobileFilters()">
+    🌿 Filter & Refine Options
+  </button>
 
   <div class="products-layout">
 
@@ -71,16 +78,55 @@
     <!-- Products Grid -->
     <main>
       <div id="products-grid" class="products-grid">
-        <!-- Skeleton loader -->
-        ${Array(6).fill(0).map(() => `
-          <div class="product-card" style="opacity:0.3;">
-            <div style="height:200px; background:var(--bg-input); border-radius:var(--radius-lg);"></div>
-            <div class="product-body">
-              <div style="height:12px; background:var(--bg-input); border-radius:4px; margin-bottom:8px;"></div>
-              <div style="height:16px; background:var(--bg-input); border-radius:4px; width:70%;"></div>
-            </div>
+        <!-- Glassy Skeleton Shimmer Cards -->
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
           </div>
-        `).join('')}
+        </div>
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
+          </div>
+        </div>
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
+          </div>
+        </div>
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
+          </div>
+        </div>
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
+          </div>
+        </div>
+        <div class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="product-body">
+            <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+            <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+            <div class="skeleton-line" style="width:50%; height:18px;"></div>
+          </div>
+        </div>
       </div>
       <div id="no-products" class="empty-state hidden">
         <div class="empty-icon">🔍</div>
@@ -96,6 +142,7 @@
 <footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
 <div id="toast-container" class="toast-container"></div>
 
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
   requireAuth();
@@ -128,11 +175,27 @@
     });
   }
 
+  function showProductsSkeleton() {
+    const grid = document.getElementById('products-grid');
+    if (!grid) return;
+    grid.innerHTML = Array.from({ length: 6 }).map(() => `
+      <div class="product-card skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="product-body">
+          <div class="skeleton-line" style="width:35%; height:11px; margin-bottom:8px;"></div>
+          <div class="skeleton-line" style="width:85%; height:16px; margin-bottom:10px;"></div>
+          <div class="skeleton-line" style="width:50%; height:18px;"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   function setCategory(catId) {
     activeCategory = catId;
     document.querySelectorAll('.filter-option').forEach(el => {
       el.classList.toggle('active', el.dataset.category == catId);
     });
+    showProductsSkeleton();
     loadProducts();
   }
 
@@ -178,9 +241,10 @@
       <div class="product-card" id="prod-${p.product_id}">
         <div class="product-img-wrap">
           <a href="product-details.html?id=${p.product_id}">
-            <img src="${p.image_url || 'https://via.placeholder.com/400x300?text=No+Image'}"
+            <img src="${p.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
                  alt="${p.name}"
-                 onerror="this.src='https://via.placeholder.com/400x300?text=No+Image'" />
+                 loading="lazy"
+                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';" />
           </a>
           <span class="product-badge">${p.category}</span>
           ${p.stock === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
@@ -272,6 +336,11 @@
     setCategory('');
   }
 
+  function toggleMobileFilters() {
+    const panel = document.querySelector('.filters-panel');
+    if (panel) panel.classList.toggle('mobile-open');
+  }
+
   // Debounced search
   document.getElementById('search-input').addEventListener('input', () => {
     clearTimeout(searchTimer);
@@ -279,11 +348,13 @@
   });
   document.getElementById('sort-select').addEventListener('change', loadProducts);
 
-  // Init
+  // Init — parallel network execution for instant page loading
   (async () => {
-    await loadWishlistIds();
-    loadCategories();
-    loadProducts();
+    await Promise.all([
+      loadWishlistIds(),
+      loadCategories(),
+      loadProducts()
+    ]);
     updateCartBadge();
     updateWishlistBadge();
   })();

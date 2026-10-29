@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const db = require('../config/db');
+const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   const header = req.headers['authorization'];
@@ -10,16 +10,16 @@ const authMiddleware = async (req, res, next) => {
   const token = header.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const [users] = await db.query('SELECT user_id, email, role FROM Users WHERE user_id = ?', [decoded.user_id]);
+    const user = await User.findOne({ user_id: decoded.user_id }).lean();
     
-    if (users.length === 0) {
+    if (!user) {
       return res.status(401).json({ success: false, message: 'User no longer exists.' });
     }
     
-    req.user = users[0];   // { user_id, email, role }
+    req.user = { user_id: user.user_id, email: user.email, role: user.role, name: user.name };
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err);
+    console.error('Auth middleware error:', err.message);
     return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
   }
 };

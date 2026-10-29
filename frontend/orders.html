@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BharatBazzar — My Orders</title>
   <meta name="description" content="Track and review all your handcrafted purchases from BharatBazzar artisans." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -74,6 +76,7 @@
 <footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
 <div id="toast-container" class="toast-container"></div>
 
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
   requireAuth();
@@ -127,8 +130,13 @@
                 ${statusEmoji(order.status)} ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
               </span>
               <span class="badge badge-${payStatusColors[order.payment_status] || 'warning'}">
-                💳 ${order.payment_status || 'unpaid'}
+                ${order.payment_method === 'razorpay' ? '⚡ Razorpay' : '💳 ' + (order.payment_status || 'unpaid')}
               </span>
+              ${['pending', 'confirmed'].includes(order.status) ? `
+                <button onclick="cancelCustomerOrder(${order.order_id})" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:rgba(217,83,79,0.3); font-size:0.75rem; padding:3px 8px;">
+                  ✕ Cancel
+                </button>
+              ` : ''}
             </div>
           </div>
           <div class="order-body">
@@ -136,10 +144,10 @@
             <div class="order-items-preview">
               ${(order.items || []).map(item => `
                 <img class="order-item-thumb"
-                     src="${item.image_url || 'https://via.placeholder.com/56?text=?'}"
+                     src="${item.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
                      alt="${item.name}"
                      title="${item.name} × ${item.quantity}"
-                     onerror="this.src='https://via.placeholder.com/56?text=?'" />
+                     onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';" />
               `).join('')}
             </div>
 
@@ -148,7 +156,10 @@
               ${(order.items || []).map(item => `
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--border-light); color:var(--text-secondary);">
                   <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="${item.image_url}" style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
+                    <img src="${item.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
+                         alt="${item.name}"
+                         onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';"
+                         style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
                     <span>${item.name} <span style="color:var(--text-muted);">× ${item.quantity}</span></span>
                   </div>
                   <div style="display:flex; align-items:center; gap:12px;">
@@ -198,6 +209,24 @@
     } catch(e) {
       hideLoader();
       showToast('Failed to load orders: ' + e.message, 'error');
+    }
+  }
+
+  // ── Cancel Order ───────────────────────────────────────────
+  async function cancelCustomerOrder(orderId) {
+    if (!confirm(`Are you sure you want to cancel Order #${orderId}? Stock will be returned to inventory.`)) {
+      return;
+    }
+    try {
+      const { ok, data } = await api.put(`/orders/${orderId}/cancel`);
+      if (ok) {
+        showToast(data.message || 'Order cancelled successfully', 'info');
+        await loadOrders();
+      } else {
+        showToast(data.message || 'Could not cancel order', 'error');
+      }
+    } catch(err) {
+      showToast('Network error cancelling order', 'error');
     }
   }
 

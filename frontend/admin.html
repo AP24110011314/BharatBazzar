@@ -4,101 +4,355 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard — BharatBazzar</title>
-  <meta name="description" content="BharatBazzar admin dashboard — manage products, orders, users, coupons, categories, and inventory." />
+  <meta name="description" content="BharatBazzar admin command center — manage catalog, orders, users, coupons, categories, and inventory." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* ── Admin Layout ─────────────────────────────── */
-    .admin-wrapper {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      min-height: calc(100vh - var(--navbar-h));
+    /* ── MacBook Glassy Admin Layout ──────────────────────── */
+    :root {
+      --admin-sidebar-w: 260px;
     }
 
-    /* ── Sidebar ──────────────────────────────────── */
+    .admin-wrapper {
+      display: grid;
+      grid-template-columns: var(--admin-sidebar-w) 1fr;
+      min-height: calc(100vh - var(--navbar-h));
+      position: relative;
+    }
+
+    /* ── Frosted Sidebar ──────────────────────────────────── */
     .admin-sidebar {
-      background: var(--bg-card);
-      border-right: 1px solid var(--border);
-      padding: 28px 16px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border-right: 1px solid rgba(255, 255, 255, 0.85);
+      padding: 24px 14px;
       position: sticky;
       top: var(--navbar-h);
       height: calc(100vh - var(--navbar-h));
       overflow-y: auto;
+      box-shadow: 4px 0 24px -10px rgba(15, 23, 42, 0.05);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-header {
+      padding: 0 10px 18px 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .macos-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .macos-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .macos-dot.red    { background: #ff5f56; border: 1px solid #e0443e; }
+    .macos-dot.yellow { background: #ffbd2e; border: 1px solid #dea123; }
+    .macos-dot.green  { background: #27c93f; border: 1px solid #1aab29; }
+
+    .sidebar-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-brand {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .sidebar-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      background: var(--primary-glow);
+      color: var(--primary-dark);
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .sidebar-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--text-muted);
       padding: 0 12px;
-      margin-bottom: 8px;
-      margin-top: 20px;
+      margin-top: 14px;
+      margin-bottom: 6px;
     }
-    .sidebar-label:first-child { margin-top: 0; }
+    .sidebar-label:first-of-type { margin-top: 0; }
 
     .sidebar-link {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
+      justify-content: space-between;
+      padding: 9px 12px;
       border-radius: var(--radius-md);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 500;
       color: var(--text-secondary);
       cursor: pointer;
-      transition: background var(--transition), color var(--transition);
-      border: none;
+      transition: all var(--transition);
+      border: 1px solid transparent;
       background: transparent;
       width: 100%;
       text-align: left;
       margin-bottom: 2px;
+      position: relative;
+    }
+    .sidebar-link-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-link .icon {
+      font-size: 1.05rem;
+      line-height: 1;
+      width: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .sidebar-link:hover {
-      background: var(--bg-input);
+      background: rgba(255, 255, 255, 0.8);
       color: var(--primary-dark);
+      border-color: rgba(255, 255, 255, 0.9);
+      transform: translateX(2px);
     }
     .sidebar-link.active {
-      background: var(--primary-glow);
+      background: rgba(31, 111, 67, 0.10);
       color: var(--primary-dark);
       font-weight: 600;
+      border-color: rgba(31, 111, 67, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(31, 111, 67, 0.06);
     }
-    .sidebar-link .icon { font-size: 1.1rem; }
+    .sidebar-link.active::before {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: 6px;
+      bottom: 6px;
+      width: 3.5px;
+      background: var(--primary);
+      border-radius: 4px;
+    }
 
-    /* ── Main Content ─────────────────────────────── */
+    .nav-pill-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-secondary);
+      transition: all var(--transition);
+    }
+    .sidebar-link.active .nav-pill-badge {
+      background: var(--primary);
+      color: #fff;
+    }
+    .nav-pill-badge.alert {
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 800;
+      animation: pulseAlert 2s infinite;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
+    /* ── Mobile Admin Navigation Bar ──────────────────────── */
+    .mobile-admin-bar {
+      display: none;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 10px 16px;
+      position: sticky;
+      top: var(--navbar-h);
+      z-index: 45;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .mobile-admin-bar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .mobile-menu-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .mobile-active-tab-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mobile-drawer {
+      display: none;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding: 14px 16px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+      animation: slideDown 0.25s ease;
+    }
+    .mobile-drawer.open {
+      display: block;
+    }
+    .mobile-drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .mobile-drawer-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--radius-md);
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      text-align: left;
+    }
+    .mobile-drawer-btn.active {
+      background: var(--primary-glow);
+      color: var(--primary-dark);
+      border-color: rgba(31, 111, 67, 0.25);
+    }
+
+    /* ── Main Canvas ──────────────────────────────────────── */
     .admin-main {
-      padding: 32px 28px;
-      background: var(--bg-body);
+      padding: 32px 36px 60px 36px;
       overflow-x: hidden;
+      min-width: 0;
     }
 
     .admin-section { display: none; }
     .admin-section.active { display: block; animation: fadeIn 0.3s ease; }
 
-    /* ── Stat Cards ───────────────────────────────── */
+    /* ── Command Header ───────────────────────────────────── */
+    .command-header {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-xl);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: var(--shadow-sm), var(--glass-specular);
+    }
+    .command-header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .admin-avatar-pill {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 12px rgba(31, 111, 67, 0.25);
+    }
+    .command-header-info h2 {
+      font-family: 'Lora', serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    .command-header-info p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      animation: pulseSuccess 2s infinite;
+    }
+    @keyframes pulseSuccess {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1); }
+    }
+    .command-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Metric Cards ─────────────────────────────────────── */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
       gap: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
       border-radius: var(--radius-lg);
-      padding: 20px 18px;
-      box-shadow: var(--shadow-sm);
+      padding: 18px;
+      box-shadow: var(--shadow-sm), var(--glass-specular);
       display: flex;
       flex-direction: column;
       gap: 6px;
       position: relative;
       overflow: hidden;
-      transition: transform var(--transition), box-shadow var(--transition);
+      transition: all var(--transition);
     }
     .stat-card:hover {
       transform: translateY(-3px);
       box-shadow: var(--shadow-md);
+      background: rgba(255, 255, 255, 0.85);
     }
     .stat-card::before {
       content: '';
@@ -106,50 +360,153 @@
       top: 0; left: 0; right: 0;
       height: 3px;
       background: linear-gradient(90deg, var(--primary), var(--accent));
+      opacity: 0.8;
     }
+    .stat-card.revenue::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .stat-card.danger::before  { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.info::before    { background: linear-gradient(90deg, #0ea5e9, #2563eb); }
 
-    .stat-icon { font-size: 1.6rem; line-height: 1; }
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-icon-wrap {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    .stat-card.revenue .stat-icon-wrap { background: rgba(16, 185, 129, 0.12); }
+    .stat-card.danger  .stat-icon-wrap { background: rgba(239, 68, 68, 0.12); }
+
     .stat-label {
       font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-muted);
+      margin-top: 2px;
     }
     .stat-value {
-      font-size: 1.7rem;
+      font-size: 1.65rem;
       font-weight: 800;
       color: var(--text-primary);
       font-family: 'Lora', serif;
-      line-height: 1.1;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
     }
-    .stat-sub { font-size: 0.76rem; color: var(--text-muted); }
+    .stat-sub {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
     .stat-card.danger .stat-value { color: var(--danger); }
-    .stat-card.success .stat-value { color: var(--success); }
+    .stat-card.revenue .stat-value { color: var(--primary-dark); }
 
-    /* ── Tables ───────────────────────────────────── */
+    /* ── Overview Visual Highlights ───────────────────────── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .pipeline-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-sm), var(--glass-specular);
+    }
+    .pipeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .pipeline-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pipeline-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .pipeline-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pipeline-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+    }
+    .pipeline-meta strong {
+      color: var(--text-primary);
+    }
+    .pipeline-bar-bg {
+      width: 100%;
+      height: 7px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .pipeline-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 0.8s ease;
+    }
+    .pipeline-bar-fill.pending   { background: #f59e0b; }
+    .pipeline-bar-fill.confirmed { background: #10b981; }
+    .pipeline-bar-fill.shipped   { background: #3b82f6; }
+    .pipeline-bar-fill.delivered { background: #059669; }
+    .pipeline-bar-fill.cancelled { background: #ef4444; }
+
+    /* ── Tables ───────────────────────────────────────────── */
     .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
       border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--shadow-sm), var(--glass-specular);
+      margin-bottom: 24px;
     }
 
     .table-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border-light);
-      background: var(--bg-surface);
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.5);
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
     }
     .table-head h3 {
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .table-head p {
       font-size: 0.82rem;
@@ -158,7 +515,55 @@
     .table-head-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Filters Bar */
+    .filter-pills-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 22px;
+      background: rgba(255, 255, 255, 0.35);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .filter-pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .filter-pill:hover {
+      background: #ffffff;
+      color: var(--primary-dark);
+      border-color: rgba(31, 111, 67, 0.3);
+    }
+    .filter-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(31, 111, 67, 0.25);
+    }
+    .filter-pill .pill-count {
+      font-size: 0.7rem;
+      padding: 1px 5px;
+      border-radius: var(--radius-full);
+      background: rgba(0, 0, 0, 0.08);
+    }
+    .filter-pill.active .pill-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
     }
 
     table {
@@ -167,33 +572,35 @@
       font-size: 0.86rem;
     }
     thead th {
-      padding: 10px 16px;
+      padding: 12px 18px;
       text-align: left;
       font-size: 0.72rem;
       font-weight: 700;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
-      background: var(--bg-input);
-      border-bottom: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.6);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
       white-space: nowrap;
     }
     tbody tr {
-      border-bottom: 1px solid var(--border-light);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
       transition: background var(--transition);
     }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-surface); }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.85); }
     tbody td {
-      padding: 11px 16px;
+      padding: 12px 18px;
       color: var(--text-secondary);
       vertical-align: middle;
     }
     tbody td strong { color: var(--text-primary); font-weight: 600; }
 
-    /* ── Badges ───────────────────────────────────── */
+    /* ── Badges ───────────────────────────────────────────── */
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       padding: 3px 10px;
       border-radius: var(--radius-full);
       font-size: 0.72rem;
@@ -201,84 +608,171 @@
       letter-spacing: 0.04em;
       text-transform: capitalize;
     }
-    .badge-pending    { background: #fef9c3; color: #854d0e; }
-    .badge-confirmed  { background: #dcfce7; color: #166534; }
-    .badge-shipped    { background: #dbeafe; color: #1e40af; }
-    .badge-delivered  { background: #d1fae5; color: #065f46; }
-    .badge-cancelled  { background: #fee2e2; color: #991b1b; }
-    .badge-completed  { background: #d1fae5; color: #065f46; }
-    .badge-failed     { background: #fee2e2; color: #991b1b; }
-    .badge-refunded   { background: #fef9c3; color: #854d0e; }
-    .badge-admin      { background: var(--primary-glow); color: var(--primary-dark); }
-    .badge-customer   { background: var(--bg-input); color: var(--text-muted); }
-    .badge-active     { background: #dcfce7; color: #166534; }
-    .badge-inactive   { background: #fee2e2; color: #991b1b; }
-    .badge-percent    { background: #dbeafe; color: #1e40af; }
-    .badge-flat       { background: #fef9c3; color: #854d0e; }
-    .badge-low        { background: #fee2e2; color: #991b1b; }
-    .badge-ok         { background: #dcfce7; color: #166534; }
+    .badge-pending    { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-confirmed  { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-shipped    { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-delivered  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-cancelled  { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-completed  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-refunded   { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-active     { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-inactive   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-percent    { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-flat       { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-low        { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-ok         { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-razorpay   { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-cod        { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .badge-vip        { background: #fef08a; color: #713f12; border: 1px solid #fde047; font-weight: 800; }
 
-    /* ── Rank indicator ───────────────────────────── */
+    /* ── Rank indicator ───────────────────────────────────── */
     .rank-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 26px; height: 26px;
+      width: 28px; height: 28px;
       border-radius: var(--radius-full);
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      background: var(--bg-input);
+      background: rgba(0, 0, 0, 0.05);
       color: var(--text-muted);
     }
-    .rank-badge.gold   { background: #fef08a; color: #713f12; }
-    .rank-badge.silver { background: #e2e8f0; color: #475569; }
+    .rank-badge.gold   { background: #fef08a; color: #713f12; box-shadow: 0 2px 6px rgba(254, 240, 138, 0.4); }
+    .rank-badge.silver { background: #e2e8f0; color: #334155; }
     .rank-badge.bronze { background: #fed7aa; color: #7c2d12; }
 
-    /* ── Section header ───────────────────────────── */
-    .section-header {
+    /* ── Quick Stock Controls ─────────────────────────────── */
+    .quick-stock-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.7);
+      padding: 3px 6px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .quick-stock-btn {
+      width: 22px; height: 24px;
+      border: 1px solid var(--border-light);
+      background: #ffffff;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: all var(--transition);
+    }
+    .quick-stock-btn:hover {
+      background: var(--primary-glow);
+      color: var(--primary-dark);
+      border-color: var(--primary);
+    }
+    .stock-input {
+      width: 48px;
+      padding: 2px 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      text-align: center;
+      background: #ffffff;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .stock-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    /* ── Action buttons in tables ─────────────────────────── */
+    .action-btns {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .action-btn {
+      width: 32px; height: 32px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+      color: var(--text-secondary);
+    }
+    .action-btn:hover {
+      background: #ffffff;
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      transform: scale(1.05);
+      box-shadow: var(--shadow-sm);
+    }
+    .action-btn.danger:hover {
+      background: #fee2e2;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    /* ── Search & Filter Controls ─────────────────────────── */
+    .table-search {
+      padding: 7px 14px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.84rem;
+      color: var(--text-primary);
+      outline: none;
+      width: 220px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .table-search:focus {
+      border-color: var(--primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .table-select {
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.84rem;
+      color: var(--text-primary);
+      outline: none;
+      cursor: pointer;
+    }
+    .table-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* ── Product image cell ───────────────────────────────── */
+    .table-product-img {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      background: var(--bg-input);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .table-product-cell {
+      display: flex;
+      align-items: center;
       gap: 12px;
     }
-    .section-header h2 {
-      font-family: 'Lora', serif;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .section-header p { color: var(--text-muted); font-size: 0.88rem; }
-    .section-header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
 
-    /* ── Loading skeleton ─────────────────────────── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-light) 50%, var(--bg-input) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: var(--radius-sm);
-      display: inline-block;
-    }
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* ── Two-col grid ─────────────────────────────── */
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-
-    /* ── Modal ────────────────────────────────────── */
+    /* ── Modals ───────────────────────────────────────────── */
     .modal-overlay {
       position: fixed;
       inset: 0;
       z-index: 1000;
-      background: rgba(30, 20, 10, 0.6);
-      backdrop-filter: blur(6px);
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -289,37 +783,39 @@
     .modal-overlay.hidden { display: none; }
 
     .modal {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(32px) saturate(200%);
+      -webkit-backdrop-filter: blur(32px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.95);
       border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-xl);
+      box-shadow: var(--shadow-xl), var(--glass-specular);
       width: 100%;
-      max-width: 560px;
+      max-width: 580px;
       max-height: 90vh;
       overflow-y: auto;
-      animation: slideUp 0.3s ease;
+      animation: slideUp 0.25s ease;
     }
-    .modal-lg { max-width: 720px; }
+    .modal-lg { max-width: 760px; }
 
     .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 24px 16px;
-      border-bottom: 1px solid var(--border-light);
+      padding: 20px 26px 16px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
     .modal-header h3 {
       font-family: 'Lora', serif;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.25rem;
+      font-weight: 700;
       color: var(--text-primary);
     }
     .modal-close {
       width: 32px; height: 32px;
       border: none;
-      background: var(--bg-input);
+      background: rgba(0, 0, 0, 0.05);
       border-radius: var(--radius-full);
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -333,15 +829,16 @@
     }
 
     .modal-body {
-      padding: 20px 24px;
+      padding: 22px 26px;
     }
 
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      padding: 16px 24px 20px;
-      border-top: 1px solid var(--border-light);
+      padding: 16px 26px 20px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.4);
     }
 
     .form-row {
@@ -350,198 +847,103 @@
       gap: 14px;
     }
 
-    /* ── Action buttons in tables ─────────────────── */
-    .action-btns {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
-    .action-btn {
-      width: 30px; height: 30px;
-      border: 1px solid var(--border-light);
-      background: var(--bg-surface);
-      border-radius: var(--radius-sm);
-      font-size: 0.85rem;
-      cursor: pointer;
+    /* ── Live Image Preview Box ───────────────────────────── */
+    .image-preview-box {
+      width: 100%;
+      height: 140px;
+      border-radius: var(--radius-md);
+      border: 1.5px dashed var(--border);
+      background: rgba(0, 0, 0, 0.02);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all var(--transition);
+      overflow: hidden;
+      margin-top: 8px;
     }
-    .action-btn:hover {
-      background: var(--primary-glow);
-      border-color: var(--primary);
-    }
-    .action-btn.danger:hover {
-      background: #fee2e2;
-      border-color: var(--danger);
+    .image-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
-    /* ── Toggle switch ───────────────────────────── */
-    .toggle {
-      position: relative;
-      width: 42px;
-      height: 24px;
-      cursor: pointer;
-    }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute;
-      inset: 0;
-      background: var(--border);
-      border-radius: var(--radius-full);
-      transition: background var(--transition);
-    }
-    .toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 18px; height: 18px;
-      left: 3px; bottom: 3px;
-      background: #fff;
-      border-radius: var(--radius-full);
-      transition: transform var(--transition);
-      box-shadow: var(--shadow-sm);
-    }
-    .toggle input:checked + .toggle-slider {
-      background: var(--success);
-    }
-    .toggle input:checked + .toggle-slider::before {
-      transform: translateX(18px);
-    }
-
-    /* ── Order detail ────────────────────────────── */
+    /* ── Order Detail Elements ────────────────────────────── */
     .order-detail-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 14px;
       margin-bottom: 20px;
     }
     .detail-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.06);
       border-radius: var(--radius-md);
       padding: 14px 16px;
     }
     .detail-card h4 {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
       color: var(--text-muted);
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .detail-card p {
       font-size: 0.88rem;
       color: var(--text-secondary);
       line-height: 1.6;
     }
-    .detail-card strong { color: var(--text-primary); }
 
-    .order-items-list {
-      list-style: none;
-      padding: 0;
-    }
-    .order-items-list li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-light);
-      font-size: 0.88rem;
-    }
-    .order-items-list li:last-child { border-bottom: none; }
-    .order-item-name { color: var(--text-primary); font-weight: 600; flex: 1; }
-    .order-item-qty { color: var(--text-muted); margin: 0 12px; }
-    .order-item-price { font-weight: 600; color: var(--primary-dark); font-family: 'Lora', serif; }
-
-    /* ── Search in tables ─────────────────────────── */
-    .table-search {
-      padding: 7px 12px;
-      background: var(--bg-input);
-      border: 1.5px solid var(--border);
+    .order-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.6);
       border-radius: var(--radius-md);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.82rem;
-      color: var(--text-primary);
-      outline: none;
-      width: 200px;
-      transition: border-color var(--transition), box-shadow var(--transition);
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.06);
     }
-    .table-search:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+    .order-items-table th {
+      padding: 8px 12px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.03);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
-
-    /* ── Product image in table ───────────────────── */
-    .table-product-img {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-sm);
-      object-fit: cover;
-      background: var(--bg-input);
-    }
-    .table-product-cell {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* ── Confirm dialog ──────────────────────────── */
-    .confirm-dialog {
-      text-align: center;
-      padding: 10px 0;
-    }
-    .confirm-dialog .confirm-icon {
-      font-size: 3rem;
-      margin-bottom: 12px;
-    }
-    .confirm-dialog p {
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-    }
-    .confirm-dialog .confirm-warn {
-      color: var(--danger);
-      font-size: 0.82rem;
-      font-weight: 600;
-    }
-
-    /* ── Stock input inline ───────────────────────── */
-    .stock-input {
-      width: 70px;
-      padding: 4px 8px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: 'Outfit', sans-serif;
+    .order-items-table td {
+      padding: 10px 12px;
       font-size: 0.85rem;
-      text-align: center;
-      background: var(--bg-input);
-      color: var(--text-primary);
-      outline: none;
-      transition: border-color var(--transition);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     }
-    .stock-input:focus {
-      border-color: var(--primary);
+    .order-items-table tr:last-child td { border-bottom: none; }
+
+    /* ── Responsive Rules ─────────────────────────────────── */
+    @media (max-width: 992px) {
+      .admin-wrapper { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; }
+      .mobile-admin-bar { display: block; }
+      .admin-main { padding: 20px 16px 40px 16px; }
+      .overview-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .order-detail-grid { grid-template-columns: 1fr; }
     }
 
-    /* ── Responsive ───────────────────────────────── */
-    @media (max-width: 900px) {
-      .admin-wrapper { grid-template-columns: 1fr; }
-      .admin-sidebar {
-        position: static;
-        height: auto;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        padding: 12px;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
-      .sidebar-label { display: none; }
-      .sidebar-link { width: auto; font-size: 0.82rem; padding: 8px 12px; }
-      .two-col { grid-template-columns: 1fr; }
-      .order-detail-grid { grid-template-columns: 1fr; }
-      .form-row { grid-template-columns: 1fr; }
-      .admin-main { padding: 20px 14px; }
+      .stat-card { padding: 14px 12px; }
+      .stat-value { font-size: 1.35rem; }
+      .table-head { flex-direction: column; align-items: flex-start; }
+      .table-search { width: 100%; }
+      .command-header { padding: 16px; }
+      .command-header-actions { width: 100%; }
+      .command-header-actions button { flex: 1; }
     }
   </style>
 </head>
@@ -549,110 +951,315 @@
 
   <div id="navbar-placeholder"></div>
 
+  <!-- ── Mobile Admin Header ── -->
+  <div class="mobile-admin-bar">
+    <div class="mobile-admin-bar-inner">
+      <button class="mobile-menu-btn" onclick="toggleMobileDrawer()">
+        <span>☰</span> <span>Admin Navigation</span>
+      </button>
+      <div class="mobile-active-tab-title" id="mobile-tab-title">
+        <span>📊</span> <span>Overview</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="loadAll()" title="Refresh Dashboard">🔄</button>
+    </div>
+  </div>
+
+  <!-- ── Mobile Drawer ── -->
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-grid">
+      <button class="mobile-drawer-btn active" id="m-nav-overview" onclick="showSection('overview'); toggleMobileDrawer();">
+        <span>📊 Overview</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-orders" onclick="showSection('orders'); toggleMobileDrawer();">
+        <span>🧾 Orders</span> <span class="nav-pill-badge" id="m-badge-orders">0</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-products" onclick="showSection('products'); toggleMobileDrawer();">
+        <span>🛍️ Products</span> <span class="nav-pill-badge" id="m-badge-products">0</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-inventory" onclick="showSection('inventory'); toggleMobileDrawer();">
+        <span>📦 Inventory</span> <span class="nav-pill-badge" id="m-badge-inventory">0</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-categories" onclick="showSection('categories'); toggleMobileDrawer();">
+        <span>📂 Categories</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-coupons" onclick="showSection('coupons'); toggleMobileDrawer();">
+        <span>🎫 Coupons</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-users" onclick="showSection('users'); toggleMobileDrawer();">
+        <span>👥 Customers</span>
+      </button>
+      <button class="mobile-drawer-btn" id="m-nav-top-products" onclick="showSection('top-products'); toggleMobileDrawer();">
+        <span>🏆 Top Sellers</span>
+      </button>
+    </div>
+  </div>
+
   <div class="admin-wrapper">
 
-    <!-- ── Sidebar ── -->
+    <!-- ── Frosted Sidebar ── -->
     <aside class="admin-sidebar">
-      <div class="sidebar-label">Overview</div>
+      <div class="sidebar-header">
+        <div class="macos-dots">
+          <span class="macos-dot red"></span>
+          <span class="macos-dot yellow"></span>
+          <span class="macos-dot green"></span>
+        </div>
+        <div class="sidebar-title-row">
+          <span class="sidebar-brand">Command Center</span>
+          <span class="sidebar-badge">v2.5 Pro</span>
+        </div>
+      </div>
+
+      <div class="sidebar-label">Analytics & Overview</div>
       <button class="sidebar-link active" id="nav-overview" onclick="showSection('overview')">
-        <span class="icon">📊</span> Dashboard
+        <div class="sidebar-link-content">
+          <span class="icon">📊</span> <span>Dashboard</span>
+        </div>
+      </button>
+      <button class="sidebar-link" id="nav-top-products" onclick="showSection('top-products')">
+        <div class="sidebar-link-content">
+          <span class="icon">🏆</span> <span>Top Sellers</span>
+        </div>
       </button>
 
-      <div class="sidebar-label">Store</div>
-      <button class="sidebar-link" id="nav-products" onclick="showSection('products')">
-        <span class="icon">🛍️</span> Products
-      </button>
-      <button class="sidebar-link" id="nav-categories" onclick="showSection('categories')">
-        <span class="icon">📂</span> Categories
+      <div class="sidebar-label">Store Operations</div>
+      <button class="sidebar-link" id="nav-orders" onclick="showSection('orders')">
+        <div class="sidebar-link-content">
+          <span class="icon">🧾</span> <span>Orders</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-orders">…</span>
       </button>
       <button class="sidebar-link" id="nav-inventory" onclick="showSection('inventory')">
-        <span class="icon">📦</span> Inventory
+        <div class="sidebar-link-content">
+          <span class="icon">📦</span> <span>Inventory</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-inventory">…</span>
+      </button>
+
+      <div class="sidebar-label">Catalog Management</div>
+      <button class="sidebar-link" id="nav-products" onclick="showSection('products')">
+        <div class="sidebar-link-content">
+          <span class="icon">🛍️</span> <span>Products</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-products">…</span>
+      </button>
+      <button class="sidebar-link" id="nav-categories" onclick="showSection('categories')">
+        <div class="sidebar-link-content">
+          <span class="icon">📂</span> <span>Categories</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-categories">…</span>
       </button>
       <button class="sidebar-link" id="nav-coupons" onclick="showSection('coupons')">
-        <span class="icon">🎫</span> Coupons
+        <div class="sidebar-link-content">
+          <span class="icon">🎫</span> <span>Coupons</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-coupons">…</span>
       </button>
 
-      <div class="sidebar-label">Operations</div>
-      <button class="sidebar-link" id="nav-orders" onclick="showSection('orders')">
-        <span class="icon">🧾</span> Orders
-      </button>
+      <div class="sidebar-label">Customer Intelligence</div>
       <button class="sidebar-link" id="nav-users" onclick="showSection('users')">
-        <span class="icon">👥</span> Users
+        <div class="sidebar-link-content">
+          <span class="icon">👥</span> <span>Customers</span>
+        </div>
+        <span class="nav-pill-badge" id="sidebar-badge-users">…</span>
       </button>
 
-      <div class="sidebar-label">Analytics</div>
-      <button class="sidebar-link" id="nav-top-products" onclick="showSection('top-products')">
-        <span class="icon">🏆</span> Top Sellers
-      </button>
+      <!-- Sidebar Footer -->
+      <div style="margin-top:auto;padding:14px 10px 0 10px;border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+          <span class="pulse-dot"></span>
+          <span>Atlas Cloud Connected</span>
+        </div>
+      </div>
     </aside>
 
-    <!-- ── Main ── -->
+    <!-- ── Main Canvas ── -->
     <main class="admin-main">
+
+      <!-- ═══════════ Command Header ═══════════ -->
+      <div class="command-header">
+        <div class="command-header-left">
+          <div class="admin-avatar-pill">👑</div>
+          <div class="command-header-info">
+            <h2 id="admin-welcome-text">Admin Command Center</h2>
+            <p>
+              <span class="pulse-dot"></span>
+              <span id="live-sync-indicator">Live MongoDB Atlas Database • Ready</span>
+              <span style="opacity:0.4;">|</span>
+              <span id="current-date-badge">Today</span>
+            </p>
+          </div>
+        </div>
+        <div class="command-header-actions">
+          <button class="btn btn-outline btn-sm" onclick="loadAll()" title="Reload All Data">🔄 Refresh</button>
+          <button class="btn btn-outline btn-sm" onclick="exportStoreSummaryCSV()" title="Export Global Snapshot">📥 Export Store CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Add Product</button>
+        </div>
+      </div>
 
       <!-- ═══════════ Overview Section ═══════════ -->
       <section class="admin-section active" id="section-overview">
-        <div class="section-header">
-          <div>
-            <h2>📊 Dashboard Overview</h2>
-            <p>Live snapshot of your store's performance</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="loadAll()">🔄 Refresh All</button>
-        </div>
 
+        <!-- KPI Metrics Grid -->
         <div class="stats-grid" id="stats-grid">
-          <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value skeleton" style="width:110px;height:32px;"> </div></div>
-          <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Orders</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-          <div class="stat-card"><div class="stat-icon">👤</div><div class="stat-label">Customers</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-          <div class="stat-card"><div class="stat-icon">🛍️</div><div class="stat-label">Products</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-          <div class="stat-card"><div class="stat-icon">📂</div><div class="stat-label">Categories</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-          <div class="stat-card"><div class="stat-icon">🎫</div><div class="stat-label">Active Coupons</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-          <div class="stat-card danger"><div class="stat-icon">⚠️</div><div class="stat-label">Low Stock</div><div class="stat-value skeleton" style="width:55px;height:32px;"> </div></div>
-        </div>
-
-        <div class="two-col">
-          <div class="table-wrap" id="overview-orders-wrap">
-            <div class="table-head">
-              <div><h3>📦 Recent Orders</h3><p>Latest 5 orders</p></div>
-              <button class="btn btn-outline btn-sm" onclick="showSection('orders')">View All</button>
+          <div class="stat-card revenue">
+            <div class="stat-header">
+              <span class="stat-label">Total Revenue</span>
+              <div class="stat-icon-wrap">💰</div>
             </div>
-            <div id="overview-orders-body"><p style="padding:20px;color:var(--text-muted);">Loading…</p></div>
+            <div class="stat-value" id="stat-revenue">₹0.00</div>
+            <div class="stat-sub">From confirmed orders</div>
           </div>
 
-          <div class="table-wrap" id="overview-products-wrap">
-            <div class="table-head">
-              <div><h3>🏆 Top Products</h3><p>Best sellers by units sold</p></div>
-              <button class="btn btn-outline btn-sm" onclick="showSection('top-products')">View All</button>
+          <div class="stat-card info">
+            <div class="stat-header">
+              <span class="stat-label">Total Orders</span>
+              <div class="stat-icon-wrap">📦</div>
             </div>
-            <div id="overview-products-body"><p style="padding:20px;color:var(--text-muted);">Loading…</p></div>
+            <div class="stat-value" id="stat-orders">0</div>
+            <div class="stat-sub" id="stat-orders-sub">Across all statuses</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">Customers</span>
+              <div class="stat-icon-wrap">👤</div>
+            </div>
+            <div class="stat-value" id="stat-users">0</div>
+            <div class="stat-sub">Registered buyers</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">Catalog Products</span>
+              <div class="stat-icon-wrap">🛍️</div>
+            </div>
+            <div class="stat-value" id="stat-products">0</div>
+            <div class="stat-sub">Active handicraft items</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">Categories</span>
+              <div class="stat-icon-wrap">📂</div>
+            </div>
+            <div class="stat-value" id="stat-categories">0</div>
+            <div class="stat-sub">Craft collections</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">Active Coupons</span>
+              <div class="stat-icon-wrap">🎫</div>
+            </div>
+            <div class="stat-value" id="stat-coupons">0</div>
+            <div class="stat-sub">Promo codes live</div>
+          </div>
+
+          <div class="stat-card danger" id="card-low-stock">
+            <div class="stat-header">
+              <span class="stat-label">Low Stock Alert</span>
+              <div class="stat-icon-wrap">⚠️</div>
+            </div>
+            <div class="stat-value" id="stat-low-stock">0</div>
+            <div class="stat-sub" id="stat-low-stock-sub">Needs warehouse restock</div>
           </div>
         </div>
+
+        <!-- Overview Visual Highlights -->
+        <div class="overview-grid">
+          <!-- Fulfillment Pipeline -->
+          <div class="pipeline-card">
+            <div class="pipeline-header">
+              <h3><span>🚚</span> Order Fulfillment Pipeline</h3>
+              <button class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:3px 8px;" onclick="showSection('orders')">View Orders →</button>
+            </div>
+            <div class="pipeline-items" id="pipeline-items">
+              <div class="pipeline-row">
+                <div class="pipeline-meta"><span>Pending Approval</span><strong id="pipe-pending-count">0</strong></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill pending" id="pipe-pending-bar" style="width:0%"></div></div>
+              </div>
+              <div class="pipeline-row">
+                <div class="pipeline-meta"><span>Confirmed / In Prep</span><strong id="pipe-confirmed-count">0</strong></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill confirmed" id="pipe-confirmed-bar" style="width:0%"></div></div>
+              </div>
+              <div class="pipeline-row">
+                <div class="pipeline-meta"><span>Dispatched / Shipped</span><strong id="pipe-shipped-count">0</strong></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill shipped" id="pipe-shipped-bar" style="width:0%"></div></div>
+              </div>
+              <div class="pipeline-row">
+                <div class="pipeline-meta"><span>Delivered Successfully</span><strong id="pipe-delivered-count">0</strong></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill delivered" id="pipe-delivered-bar" style="width:0%"></div></div>
+              </div>
+              <div class="pipeline-row">
+                <div class="pipeline-meta"><span>Cancelled / Restocked</span><strong id="pipe-cancelled-count">0</strong></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill cancelled" id="pipe-cancelled-bar" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Selling Handicrafts -->
+          <div class="table-wrap" style="margin-bottom:0;">
+            <div class="table-head">
+              <div>
+                <h3><span>🏆</span> Top Selling Handicrafts</h3>
+                <p>Ranked by volume & revenue</p>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="showSection('top-products')">All Rankings</button>
+            </div>
+            <div id="overview-products-body">
+              <p style="padding:24px;color:var(--text-muted);text-align:center;">Loading top sellers…</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders Mini Table -->
+        <div class="table-wrap">
+          <div class="table-head">
+            <div>
+              <h3><span>🧾</span> Recent Orders</h3>
+              <p>Real-time customer transactions</p>
+            </div>
+            <div class="table-head-actions">
+              <button class="btn btn-outline btn-sm" onclick="exportOrdersCSV()">📥 Export CSV</button>
+              <button class="btn btn-outline btn-sm" onclick="showSection('orders')">Manage All Orders →</button>
+            </div>
+          </div>
+          <div id="overview-orders-body">
+            <p style="padding:24px;color:var(--text-muted);text-align:center;">Loading recent orders…</p>
+          </div>
+        </div>
+
       </section>
 
       <!-- ═══════════ Products Section ═══════════ -->
       <section class="admin-section" id="section-products">
-        <div class="section-header">
-          <div>
-            <h2>🛍️ Product Management</h2>
-            <p>Create, edit, and manage all products</p>
-          </div>
-          <div class="section-header-actions">
-            <button class="btn btn-outline btn-sm" onclick="loadProducts()">🔄 Refresh</button>
-            <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Add Product</button>
-          </div>
-        </div>
         <div class="table-wrap">
           <div class="table-head">
-            <div><h3>All Products</h3></div>
+            <div>
+              <h3><span>🛍️</span> Product Catalog Management</h3>
+              <p>Manage, price, and publish handicraft artisan items</p>
+            </div>
             <div class="table-head-actions">
-              <input type="text" class="table-search" placeholder="Search products…" id="product-search" oninput="filterProducts()">
-              <span id="products-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+              <select class="table-select" id="product-category-filter" onchange="filterProducts()">
+                <option value="">All Categories</option>
+              </select>
+              <select class="table-select" id="product-stock-filter" onchange="filterProducts()">
+                <option value="all">All Stock Statuses</option>
+                <option value="in_stock">In Stock (≥10)</option>
+                <option value="low_stock">Low Stock (&lt;10)</option>
+                <option value="out_of_stock">Out of Stock (0)</option>
+              </select>
+              <input type="text" class="table-search" placeholder="Search products, brand…" id="product-search" oninput="filterProducts()">
+              <button class="btn btn-outline btn-sm" onclick="exportProductsCSV()" title="Download CSV">📥 Export</button>
+              <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Add Product</button>
             </div>
           </div>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th>#ID</th>
                   <th>Product</th>
                   <th>Category</th>
                   <th>Price</th>
@@ -663,44 +1270,7 @@
                 </tr>
               </thead>
               <tbody id="products-tbody">
-                <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════ Categories Section ═══════════ -->
-      <section class="admin-section" id="section-categories">
-        <div class="section-header">
-          <div>
-            <h2>📂 Category Management</h2>
-            <p>Organize your product catalog</p>
-          </div>
-          <div class="section-header-actions">
-            <button class="btn btn-outline btn-sm" onclick="loadCategories()">🔄 Refresh</button>
-            <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">+ Add Category</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <div class="table-head">
-            <div><h3>All Categories</h3></div>
-            <span id="categories-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
-          </div>
-          <div style="overflow-x:auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>#ID</th>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Parent</th>
-                  <th>Products</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="categories-tbody">
-                <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">Loading products…</td></tr>
               </tbody>
             </table>
           </div>
@@ -709,75 +1279,38 @@
 
       <!-- ═══════════ Inventory Section ═══════════ -->
       <section class="admin-section" id="section-inventory">
-        <div class="section-header">
-          <div>
-            <h2>📦 Inventory Management</h2>
-            <p>Update stock quantities for products</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="loadInventory()">🔄 Refresh</button>
-        </div>
         <div class="table-wrap">
           <div class="table-head">
-            <div><h3>Stock Levels</h3></div>
+            <div>
+              <h3><span>📦</span> Warehouse Inventory Management</h3>
+              <p>Instant stock adjuster & low stock warning control</p>
+            </div>
             <div class="table-head-actions">
-              <input type="text" class="table-search" placeholder="Search…" id="inventory-search" oninput="filterInventory()">
-              <span id="inventory-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+              <select class="table-select" id="inventory-category-filter" onchange="filterInventory()">
+                <option value="">All Categories</option>
+              </select>
+              <button class="filter-pill" id="inventory-low-stock-toggle" onclick="toggleInventoryLowStockFilter()">
+                <span>⚠️ Low Stock Only (<10)</span>
+              </button>
+              <input type="text" class="table-search" placeholder="Search item or category…" id="inventory-search" oninput="filterInventory()">
+              <button class="btn btn-outline btn-sm" onclick="exportInventoryCSV()">📥 Export CSV</button>
             </div>
           </div>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Product</th>
+                  <th>#ID</th>
+                  <th>Product Item</th>
                   <th>Category</th>
-                  <th>Price</th>
+                  <th>Unit Price</th>
                   <th>Current Stock</th>
                   <th>Status</th>
-                  <th>Update</th>
+                  <th>Warehouse Quick Adjuster</th>
                 </tr>
               </thead>
               <tbody id="inventory-tbody">
-                <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════ Coupons Section ═══════════ -->
-      <section class="admin-section" id="section-coupons">
-        <div class="section-header">
-          <div>
-            <h2>🎫 Coupon Management</h2>
-            <p>Create and manage discount codes</p>
-          </div>
-          <div class="section-header-actions">
-            <button class="btn btn-outline btn-sm" onclick="loadCoupons()">🔄 Refresh</button>
-            <button class="btn btn-primary btn-sm" onclick="openCouponModal()">+ Add Coupon</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <div class="table-head">
-            <div><h3>All Coupons</h3></div>
-            <span id="coupons-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
-          </div>
-          <div style="overflow-x:auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>#ID</th>
-                  <th>Code</th>
-                  <th>Type</th>
-                  <th>Value</th>
-                  <th>Min Order</th>
-                  <th>Max Uses</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="coupons-tbody">
-                <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+                <tr><td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">Loading inventory…</td></tr>
               </tbody>
             </table>
           </div>
@@ -786,19 +1319,79 @@
 
       <!-- ═══════════ Orders Section ═══════════ -->
       <section class="admin-section" id="section-orders">
-        <div class="section-header">
-          <div>
-            <h2>🧾 All Orders</h2>
-            <p>Complete order history across all customers</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 Refresh</button>
-        </div>
         <div class="table-wrap">
           <div class="table-head">
-            <div><h3>Order List</h3></div>
+            <div>
+              <h3><span>🧾</span> Order Fulfillment Hub</h3>
+              <p>Process, fulfill, and review customer orders</p>
+            </div>
             <div class="table-head-actions">
-              <input type="text" class="table-search" placeholder="Search orders…" id="order-search" oninput="filterOrders()">
-              <span id="orders-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+              <select class="table-select" id="order-payment-filter" onchange="filterOrders()">
+                <option value="all">All Payment Methods</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="cod">Cash on Delivery</option>
+              </select>
+              <input type="text" class="table-search" placeholder="Search Order ID, name, email…" id="order-search" oninput="filterOrders()">
+              <button class="btn btn-outline btn-sm" onclick="exportOrdersCSV()">📥 Export CSV</button>
+            </div>
+          </div>
+
+          <!-- Status Filter Tabs -->
+          <div class="filter-pills-row" id="order-status-tabs">
+            <button class="filter-pill active" onclick="setOrderStatusFilter('all')">
+              <span>All Orders</span> <span class="pill-count" id="tab-count-all">0</span>
+            </button>
+            <button class="filter-pill" onclick="setOrderStatusFilter('pending')">
+              <span>Pending</span> <span class="pill-count" id="tab-count-pending">0</span>
+            </button>
+            <button class="filter-pill" onclick="setOrderStatusFilter('confirmed')">
+              <span>Confirmed</span> <span class="pill-count" id="tab-count-confirmed">0</span>
+            </button>
+            <button class="filter-pill" onclick="setOrderStatusFilter('shipped')">
+              <span>Shipped</span> <span class="pill-count" id="tab-count-shipped">0</span>
+            </button>
+            <button class="filter-pill" onclick="setOrderStatusFilter('delivered')">
+              <span>Delivered</span> <span class="pill-count" id="tab-count-delivered">0</span>
+            </button>
+            <button class="filter-pill" onclick="setOrderStatusFilter('cancelled')">
+              <span>Cancelled</span> <span class="pill-count" id="tab-count-cancelled">0</span>
+            </button>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>Customer Name</th>
+                  <th>Contact Email</th>
+                  <th>Order Total</th>
+                  <th>Fulfillment Status</th>
+                  <th>Payment Method</th>
+                  <th>Payment Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody">
+                <tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">Loading orders…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Categories Section ═══════════ -->
+      <section class="admin-section" id="section-categories">
+        <div class="table-wrap">
+          <div class="table-head">
+            <div>
+              <h3><span>📂</span> Category Management</h3>
+              <p>Organize product taxonomy and artisanal groups</p>
+            </div>
+            <div class="table-head-actions">
+              <input type="text" class="table-search" placeholder="Search category…" id="category-search" oninput="filterCategories()">
+              <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">+ Add Category</button>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -806,17 +1399,50 @@
               <thead>
                 <tr>
                   <th>#ID</th>
-                  <th>Customer</th>
-                  <th>Email</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th>Date</th>
+                  <th>Category Name</th>
+                  <th>Description</th>
+                  <th>Parent Collection</th>
+                  <th>Active Products</th>
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="orders-tbody">
-                <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Loading orders…</td></tr>
+              <tbody id="categories-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">Loading categories…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ Coupons Section ═══════════ -->
+      <section class="admin-section" id="section-coupons">
+        <div class="table-wrap">
+          <div class="table-head">
+            <div>
+              <h3><span>🎫</span> Promotional Coupons</h3>
+              <p>Create and regulate discounts, seasonal offers, and limits</p>
+            </div>
+            <div class="table-head-actions">
+              <input type="text" class="table-search" placeholder="Search coupon code…" id="coupon-search" oninput="filterCoupons()">
+              <button class="btn btn-primary btn-sm" onclick="openCouponModal()">+ Add Coupon</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>#ID</th>
+                  <th>Code</th>
+                  <th>Discount Type</th>
+                  <th>Discount Value</th>
+                  <th>Min Order</th>
+                  <th>Usage Limit</th>
+                  <th>Active Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="coupons-tbody">
+                <tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">Loading coupons…</td></tr>
               </tbody>
             </table>
           </div>
@@ -825,19 +1451,20 @@
 
       <!-- ═══════════ Users Section ═══════════ -->
       <section class="admin-section" id="section-users">
-        <div class="section-header">
-          <div>
-            <h2>👥 User Management</h2>
-            <p>All registered users with role control</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="loadUsers()">🔄 Refresh</button>
-        </div>
         <div class="table-wrap">
           <div class="table-head">
-            <div><h3>User Directory</h3></div>
+            <div>
+              <h3><span>👥</span> Registered Customers & Administrators</h3>
+              <p>Customer accounts, order history, and access role management</p>
+            </div>
             <div class="table-head-actions">
-              <input type="text" class="table-search" placeholder="Search users…" id="user-search" oninput="filterUsers()">
-              <span id="users-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+              <select class="table-select" id="user-role-filter" onchange="filterUsers()">
+                <option value="all">All Roles</option>
+                <option value="customer">Customers</option>
+                <option value="admin">Administrators</option>
+              </select>
+              <input type="text" class="table-search" placeholder="Search name, email, phone…" id="user-search" oninput="filterUsers()">
+              <button class="btn btn-outline btn-sm" onclick="exportUsersCSV()">📥 Export CSV</button>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -845,54 +1472,52 @@
               <thead>
                 <tr>
                   <th>#ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
+                  <th>Full Name</th>
+                  <th>Email Address</th>
                   <th>Phone</th>
-                  <th>Role</th>
-                  <th>Orders</th>
+                  <th>System Role</th>
+                  <th>Total Orders</th>
                   <th>Total Spent</th>
-                  <th>Joined</th>
+                  <th>Joined Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="users-tbody">
-                <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+                <tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">Loading users…</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- ═══════════ Top Products Section ═══════════ -->
+      <!-- ═══════════ Top Products (Analytics) Section ═══════════ -->
       <section class="admin-section" id="section-top-products">
-        <div class="section-header">
-          <div>
-            <h2>🏆 Top Selling Products</h2>
-            <p>Best-selling products ranked by units sold</p>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="loadTopProducts()">🔄 Refresh</button>
-        </div>
         <div class="table-wrap">
           <div class="table-head">
-            <div><h3>Sales Rankings</h3></div>
-            <span id="top-products-count" style="font-size:0.82rem;color:var(--text-muted);"></span>
+            <div>
+              <h3><span>🏆</span> Top Selling Handicrafts Leaderboard</h3>
+              <p>Top performing products ranked by confirmed units sold and revenue</p>
+            </div>
+            <div class="table-head-actions">
+              <button class="btn btn-outline btn-sm" onclick="exportTopProductsCSV()">📥 Export Leaderboard CSV</button>
+            </div>
           </div>
           <div style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
                   <th>Rank</th>
-                  <th>Product</th>
+                  <th>Product Item</th>
                   <th>Category</th>
-                  <th>Price</th>
+                  <th>Unit Price</th>
                   <th>Units Sold</th>
-                  <th>Revenue</th>
-                  <th>Avg Rating</th>
-                  <th>Stock Left</th>
+                  <th>Gross Revenue</th>
+                  <th>Customer Rating</th>
+                  <th>Inventory Left</th>
                 </tr>
               </thead>
               <tbody id="top-products-tbody">
-                <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Loading…</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">Loading rankings…</td></tr>
               </tbody>
             </table>
           </div>
@@ -902,11 +1527,11 @@
     </main>
   </div>
 
-  <!-- ═══════════ Modal Container ═══════════ -->
+  <!-- ═══════════ Modal Dialog Container ═══════════ -->
   <div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
     <div class="modal" id="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3 id="modal-title">Modal</h3>
+        <h3 id="modal-title">Dialog</h3>
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modal-body" id="modal-body"></div>
@@ -916,9 +1541,10 @@
 
   <div id="toast-container" class="toast-container"></div>
 
+  <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script>
-    // ── Guard: admin only ──────────────────────────
+    // ── Guard: admin only ───────────────────────────────────
     (function() {
       const user = getUser();
       if (!user) { window.location.href = 'index.html'; return; }
@@ -930,8 +1556,31 @@
 
     buildNavbar('admin');
 
-    // ── Section navigation ─────────────────────────
+    // ── Date & Welcome text ─────────────────────────────────
+    (function initHeader() {
+      const u = getUser();
+      if (u && u.name) {
+        document.getElementById('admin-welcome-text').textContent = `Welcome back, ${u.name.split(' ')[0]}`;
+      }
+      const now = new Date();
+      document.getElementById('current-date-badge').textContent = now.toLocaleDateString('en-IN', {
+        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+      });
+    })();
+
+    // ── Section navigation ──────────────────────────────────
     const sections = ['overview', 'products', 'categories', 'inventory', 'coupons', 'orders', 'users', 'top-products'];
+    const sectionNamesMap = {
+      overview: '📊 Overview',
+      products: '🛍️ Products',
+      categories: '📂 Categories',
+      inventory: '📦 Inventory',
+      coupons: '🎫 Coupons',
+      orders: '🧾 Orders',
+      users: '👥 Customers',
+      'top-products': '🏆 Top Sellers'
+    };
+
     const sectionLoaders = {
       products: loadProducts,
       categories: loadCategories,
@@ -945,26 +1594,54 @@
 
     function showSection(name) {
       sections.forEach(s => {
-        document.getElementById('section-' + s).classList.toggle('active', s === name);
-        document.getElementById('nav-' + s).classList.toggle('active', s === name);
+        const secEl = document.getElementById('section-' + s);
+        if (secEl) secEl.classList.toggle('active', s === name);
+
+        const navEl = document.getElementById('nav-' + s);
+        if (navEl) navEl.classList.toggle('active', s === name);
+
+        const mNavEl = document.getElementById('m-nav-' + s);
+        if (mNavEl) mNavEl.classList.toggle('active', s === name);
       });
+
+      const mobileTitle = document.getElementById('mobile-tab-title');
+      if (mobileTitle) mobileTitle.innerHTML = sectionNamesMap[name] || name;
+
       if (sectionLoaders[name] && !loaded[name]) {
         loaded[name] = true;
         sectionLoaders[name]();
       }
     }
 
-    // ── Format helpers ─────────────────────────────
+    function toggleMobileDrawer() {
+      const drawer = document.getElementById('mobile-drawer');
+      if (drawer) drawer.classList.toggle('open');
+    }
+
+    // ── Formatting Helpers ──────────────────────────────────
     function fmtDate(str) {
       if (!str) return '—';
       return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     }
+    function fmtDateTime(str) {
+      if (!str) return '—';
+      return new Date(str).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
     function statusBadge(status) {
-      return `<span class="badge badge-${(status||'pending').toLowerCase()}">${status || 'pending'}</span>`;
+      const s = (status || 'pending').toLowerCase();
+      return `<span class="badge badge-${s}">${status || 'pending'}</span>`;
+    }
+    function paymentBadge(method, status) {
+      const m = (method || 'Online').toLowerCase();
+      const s = (status || 'completed').toLowerCase();
+      const isRazorpay = m.includes('razorpay') || m === 'online';
+      const badgeCls = isRazorpay ? 'badge-razorpay' : 'badge-cod';
+      const label = isRazorpay ? 'Razorpay' : 'Cash on Delivery';
+      return `<span class="badge ${badgeCls}">💳 ${label}</span>`;
     }
     function rankBadge(i) {
       const cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-      const label = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
+      const label = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
       return `<span class="rank-badge ${cls}">${label}</span>`;
     }
     function stockBadge(qty) {
@@ -973,9 +1650,29 @@
       return `<span class="badge badge-ok">${qty} in stock</span>`;
     }
 
-    // ══════════════════════════════════════════════
+    // ── Client-side CSV Download ────────────────────────────
+    function downloadCSV(filename, rows) {
+      const processRow = (row) => row.map(val => {
+        if (val === null || val === undefined) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      }).join(',');
+
+      const csvContent = '\uFEFF' + rows.map(processRow).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // ════════════════════════════════════════════════════════
     //  MODAL SYSTEM
-    // ══════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
 
     function openModal(title, bodyHtml, footerHtml, large = false) {
       document.getElementById('modal-title').textContent = title;
@@ -992,145 +1689,235 @@
       document.getElementById('modal-overlay').classList.add('hidden');
       document.body.style.overflow = '';
     }
-    // close on Escape
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
     function confirmDialog(title, message, warning, onConfirm) {
       openModal(title,
-        `<div class="confirm-dialog">
-          <div class="confirm-icon">⚠️</div>
-          <p>${message}</p>
-          ${warning ? `<p class="confirm-warn">${warning}</p>` : ''}
+        `<div style="text-align:center;padding:14px 0;">
+          <div style="font-size:3rem;margin-bottom:12px;">⚠️</div>
+          <p style="color:var(--text-primary);font-size:1rem;margin-bottom:6px;">${message}</p>
+          ${warning ? `<p style="color:var(--danger);font-size:0.84rem;font-weight:600;">${warning}</p>` : ''}
         </div>`,
         `<button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
-         <button class="btn btn-danger btn-sm" onclick="(${onConfirm.toString()})(); closeModal();">Yes, Delete</button>`
+         <button class="btn btn-danger btn-sm" onclick="(${onConfirm.toString()})(); closeModal();">Proceed</button>`
       );
     }
 
-    // ══════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
     //  DASHBOARD STATS
-    // ══════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+
+    let currentStats = {};
 
     async function loadStats() {
       try {
         const { ok, data } = await api.get('/admin/stats');
         if (!ok) throw new Error(data.message);
         const s = data.stats;
-        document.getElementById('stats-grid').innerHTML = `
-          <div class="stat-card success">
-            <div class="stat-icon">💰</div>
-            <div class="stat-label">Total Revenue</div>
-            <div class="stat-value">${formatPrice(s.total_revenue)}</div>
-            <div class="stat-sub">From confirmed orders</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📦</div>
-            <div class="stat-label">Total Orders</div>
-            <div class="stat-value">${s.total_orders}</div>
-            <div class="stat-sub">All time</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">👤</div>
-            <div class="stat-label">Customers</div>
-            <div class="stat-value">${s.total_users}</div>
-            <div class="stat-sub">Registered</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🛍️</div>
-            <div class="stat-label">Products</div>
-            <div class="stat-value">${s.total_products}</div>
-            <div class="stat-sub">Active listings</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📂</div>
-            <div class="stat-label">Categories</div>
-            <div class="stat-value">${s.total_categories}</div>
-            <div class="stat-sub">Product groups</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🎫</div>
-            <div class="stat-label">Active Coupons</div>
-            <div class="stat-value">${s.total_coupons}</div>
-            <div class="stat-sub">Available discounts</div>
-          </div>
-          <div class="stat-card ${s.low_stock > 0 ? 'danger' : 'success'}">
-            <div class="stat-icon">${s.low_stock > 0 ? '⚠️' : '✅'}</div>
-            <div class="stat-label">Low Stock Items</div>
-            <div class="stat-value">${s.low_stock}</div>
-            <div class="stat-sub">${s.low_stock > 0 ? 'Needs restocking' : 'All stocked up'}</div>
-          </div>
-        `;
+        currentStats = s;
+
+        document.getElementById('stat-revenue').textContent = formatPrice(s.total_revenue);
+        document.getElementById('stat-orders').textContent = s.total_orders;
+        document.getElementById('stat-users').textContent = s.total_users;
+        document.getElementById('stat-products').textContent = s.total_products;
+        document.getElementById('stat-categories').textContent = s.total_categories;
+        document.getElementById('stat-coupons').textContent = s.total_coupons;
+        document.getElementById('stat-low-stock').textContent = s.low_stock;
+
+        // Dynamic badges in sidebar & mobile drawer
+        setSidebarBadge('sidebar-badge-products', s.total_products);
+        setSidebarBadge('m-badge-products', s.total_products);
+        setSidebarBadge('sidebar-badge-categories', s.total_categories);
+        setSidebarBadge('sidebar-badge-coupons', s.total_coupons);
+        setSidebarBadge('sidebar-badge-users', s.total_users);
+        setSidebarBadge('m-badge-users', s.total_users);
+
+        const lowStockBadge = document.getElementById('sidebar-badge-inventory');
+        const mLowStockBadge = document.getElementById('m-badge-inventory');
+        if (s.low_stock > 0) {
+          if (lowStockBadge) {
+            lowStockBadge.textContent = `⚠️ ${s.low_stock}`;
+            lowStockBadge.className = 'nav-pill-badge alert';
+          }
+          if (mLowStockBadge) {
+            mLowStockBadge.textContent = `⚠️ ${s.low_stock}`;
+            mLowStockBadge.className = 'nav-pill-badge alert';
+          }
+        } else {
+          if (lowStockBadge) {
+            lowStockBadge.textContent = '✓ OK';
+            lowStockBadge.className = 'nav-pill-badge';
+          }
+          if (mLowStockBadge) {
+            mLowStockBadge.textContent = '✓';
+            mLowStockBadge.className = 'nav-pill-badge';
+          }
+        }
+
       } catch (e) {
         showToast('Failed to load stats: ' + e.message, 'error');
       }
     }
 
-    // ══════════════════════════════════════════════
-    //  ORDERS
-    // ══════════════════════════════════════════════
+    function setSidebarBadge(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  ORDERS MANAGEMENT
+    // ════════════════════════════════════════════════════════
 
     let allOrders = [];
+    let currentOrderStatusFilter = 'all';
+
     async function loadOrders() {
-      loaded.orders = false; // allow reload
+      loaded.orders = false;
       try {
         const { ok, data } = await api.get('/admin/orders');
         if (!ok) throw new Error(data.message);
         allOrders = data.orders || [];
         loaded.orders = true;
-        renderOrders(allOrders);
 
-        // Also update overview preview
+        // Update pipeline and counts
+        updateOrderPipeline(allOrders);
+
+        // Sidebar count
+        const pendingCount = allOrders.filter(o => o.status === 'pending').length;
+        setSidebarBadge('sidebar-badge-orders', pendingCount > 0 ? `⏳ ${pendingCount}` : allOrders.length);
+        setSidebarBadge('m-badge-orders', pendingCount > 0 ? `⏳ ${pendingCount}` : allOrders.length);
+
+        renderOrders();
         renderOverviewOrders(allOrders.slice(0, 5));
       } catch (e) {
         showToast('Failed to load orders: ' + e.message, 'error');
       }
     }
 
-    function renderOrders(orders) {
-      document.getElementById('orders-count').textContent = `${orders.length} orders`;
-      document.getElementById('orders-tbody').innerHTML = orders.length
-        ? orders.map(o => `
-          <tr>
-            <td><strong>#${o.order_id}</strong></td>
-            <td>${o.user_name}</td>
-            <td style="color:var(--text-muted);font-size:0.8rem;">${o.email}</td>
-            <td><strong>${formatPrice(o.total_amount)}</strong></td>
-            <td>
-              <select class="form-control" style="font-size:0.75rem;padding:2px 6px;height:auto;width:110px;"
-                      onchange="updateOrderStatus(${o.order_id}, this.value)">
-                ${['pending','confirmed','shipped','delivered','cancelled'].map(s =>
-                  `<option value="${s}" ${o.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
-                ).join('')}
-              </select>
-            </td>
-            <td>${statusBadge(o.payment_status || 'pending')}</td>
-            <td>${fmtDate(o.created_at)}</td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn" title="View Details" onclick="viewOrderDetails(${o.order_id})">👁️</button>
-              </div>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No orders found.</td></tr>';
+    function updateOrderPipeline(orders) {
+      const total = orders.length || 1;
+      const counts = { pending: 0, confirmed: 0, shipped: 0, delivered: 0, cancelled: 0 };
+      orders.forEach(o => {
+        const s = (o.status || 'pending').toLowerCase();
+        if (counts[s] !== undefined) counts[s]++;
+      });
+
+      ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].forEach(s => {
+        const count = counts[s];
+        const pct = Math.round((count / total) * 100);
+        const countEl = document.getElementById(`pipe-${s}-count`);
+        const barEl = document.getElementById(`pipe-${s}-bar`);
+        const tabEl = document.getElementById(`tab-count-${s}`);
+        if (countEl) countEl.textContent = `${count} (${pct}%)`;
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (tabEl) tabEl.textContent = count;
+      });
+
+      const tabAllEl = document.getElementById('tab-count-all');
+      if (tabAllEl) tabAllEl.textContent = orders.length;
     }
 
-    function renderOverviewOrders(preview) {
-      document.getElementById('overview-orders-body').innerHTML = preview.length ? `
-        <table><thead><tr><th>#</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead>
-        <tbody>${preview.map(o => `
-          <tr>
-            <td><strong>#${o.order_id}</strong></td>
-            <td>${o.user_name}</td>
-            <td>${formatPrice(o.total_amount)}</td>
-            <td>${statusBadge(o.status)}</td>
-          </tr>`).join('')}</tbody></table>` : '<p style="padding:20px;color:var(--text-muted);">No orders yet.</p>';
+    function setOrderStatusFilter(status) {
+      currentOrderStatusFilter = status;
+      const pills = document.querySelectorAll('#order-status-tabs .filter-pill');
+      pills.forEach(p => {
+        const isMatch = (status === 'all' && p.textContent.includes('All')) ||
+                        (p.textContent.toLowerCase().includes(status));
+        p.classList.toggle('active', isMatch);
+      });
+      renderOrders();
     }
 
     function filterOrders() {
-      const q = document.getElementById('order-search').value.toLowerCase();
-      renderOrders(allOrders.filter(o =>
-        `#${o.order_id} ${o.user_name} ${o.email} ${o.status}`.toLowerCase().includes(q)
-      ));
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const q = (document.getElementById('order-search')?.value || '').toLowerCase().trim();
+      const payFilter = document.getElementById('order-payment-filter')?.value || 'all';
+
+      let filtered = allOrders;
+
+      // Status filter
+      if (currentOrderStatusFilter !== 'all') {
+        filtered = filtered.filter(o => (o.status || 'pending').toLowerCase() === currentOrderStatusFilter);
+      }
+
+      // Payment filter
+      if (payFilter === 'razorpay') {
+        filtered = filtered.filter(o => (o.payment_method || '').toLowerCase().includes('razorpay') || (o.payment_method || '').toLowerCase() === 'online');
+      } else if (payFilter === 'cod') {
+        filtered = filtered.filter(o => (o.payment_method || '').toLowerCase().includes('cash'));
+      }
+
+      // Search filter
+      if (q) {
+        filtered = filtered.filter(o =>
+          `#${o.order_id} ${o.user_name} ${o.email} ${o.status}`.toLowerCase().includes(q)
+        );
+      }
+
+      const tbody = document.getElementById('orders-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(o => `
+        <tr>
+          <td><strong>#${o.order_id}</strong></td>
+          <td><strong>${o.user_name}</strong></td>
+          <td style="color:var(--text-muted);font-size:0.8rem;">${o.email}</td>
+          <td><strong style="font-family:'Lora',serif;color:var(--primary-dark);">${formatPrice(o.total_amount)}</strong></td>
+          <td>
+            <select class="table-select" style="font-size:0.75rem;padding:3px 8px;font-weight:600;"
+                    onchange="updateOrderStatus(${o.order_id}, this.value)">
+              ${['pending','confirmed','shipped','delivered','cancelled'].map(s =>
+                `<option value="${s}" ${o.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td>${paymentBadge(o.payment_method, o.payment_status)}</td>
+          <td>${statusBadge(o.payment_status || 'completed')}</td>
+          <td style="font-size:0.8rem;white-space:nowrap;">${fmtDate(o.created_at)}</td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn" title="View Full Order Details" onclick="viewOrderDetails(${o.order_id})">👁️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">No orders matching current criteria.</td></tr>`;
+    }
+
+    function renderOverviewOrders(preview) {
+      const container = document.getElementById('overview-orders-body');
+      if (!container) return;
+
+      container.innerHTML = preview.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Payment</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${preview.map(o => `
+              <tr>
+                <td><strong>#${o.order_id}</strong></td>
+                <td>${o.user_name}</td>
+                <td><strong style="color:var(--primary-dark);">${formatPrice(o.total_amount)}</strong></td>
+                <td>${statusBadge(o.status)}</td>
+                <td>${paymentBadge(o.payment_method, o.payment_status)}</td>
+                <td style="font-size:0.8rem;">${fmtDate(o.created_at)}</td>
+                <td><button class="action-btn" title="View Details" onclick="viewOrderDetails(${o.order_id})">👁️</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : `<p style="padding:24px;color:var(--text-muted);text-align:center;">No orders placed yet.</p>`;
     }
 
     async function updateOrderStatus(orderId, newStatus) {
@@ -1138,12 +1925,19 @@
         const { ok, data } = await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
         if (ok) {
           showToast(data.message, 'success');
+          // Optimistic local update
+          const order = allOrders.find(o => o.order_id === orderId);
+          if (order) order.status = newStatus;
+          updateOrderPipeline(allOrders);
+          renderOrders();
           loadStats();
         } else {
           showToast(data.message, 'error');
+          loadOrders();
         }
       } catch (e) {
-        showToast('Error updating status', 'error');
+        showToast('Error updating status: ' + e.message, 'error');
+        loadOrders();
       }
     }
 
@@ -1159,47 +1953,109 @@
         const bodyHtml = `
           <div class="order-detail-grid">
             <div class="detail-card">
-              <h4>📋 Order Info</h4>
-              <p><strong>Order #${o.order_id}</strong><br>
-                 Status: ${statusBadge(o.status)}<br>
-                 Date: ${fmtDate(o.created_at)}</p>
+              <h4><span>📋</span> Order Overview</h4>
+              <p>
+                <strong>Order #${o.order_id}</strong><br>
+                Status: ${statusBadge(o.status)}<br>
+                Placed: ${fmtDateTime(o.created_at)}
+              </p>
+              <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.06);">
+                <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">CHANGE ORDER STATUS</label>
+                <div style="display:flex;gap:6px;">
+                  <select id="modal-status-select" class="table-select" style="flex:1;font-size:0.8rem;">
+                    ${['pending','confirmed','shipped','delivered','cancelled'].map(s =>
+                      `<option value="${s}" ${o.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+                    ).join('')}
+                  </select>
+                  <button class="btn btn-primary btn-sm" onclick="saveStatusFromModal(${o.order_id})">Save</button>
+                </div>
+              </div>
             </div>
+
             <div class="detail-card">
-              <h4>👤 Customer</h4>
-              <p><strong>${o.user_name}</strong><br>
-                 ${o.email}<br>
-                 ${o.phone || '—'}</p>
+              <h4><span>👤</span> Customer Information</h4>
+              <p>
+                <strong>${o.user_name || 'Valued Customer'}</strong><br>
+                ✉️ <a href="mailto:${o.email}" style="color:var(--primary);">${o.email || '—'}</a><br>
+                📞 ${o.phone ? `<a href="tel:${o.phone}">${o.phone}</a>` : 'Phone not provided'}
+              </p>
             </div>
+
             <div class="detail-card">
-              <h4>📍 Shipping Address</h4>
-              <p>${o.street ? `${o.address_label || ''}: ${o.street}, ${o.city}, ${o.state} ${o.zip}, ${o.country}` : 'No address on file'}</p>
+              <h4><span>📍</span> Shipping Address</h4>
+              <p>
+                ${o.street ? `
+                  <strong>${o.address_label || 'Delivery Address'}</strong><br>
+                  ${o.street}<br>
+                  ${o.city}, ${o.state} ${o.zip}<br>
+                  ${o.country}
+                ` : '<span style="color:var(--text-muted);">No physical address attached</span>'}
+              </p>
             </div>
+
             <div class="detail-card">
-              <h4>💳 Payment</h4>
-              <p>${pay ? `Method: <strong>${pay.method}</strong><br>Status: ${statusBadge(pay.status)}<br>Ref: ${pay.transaction_ref || '—'}` : 'No payment recorded'}</p>
+              <h4><span>💳</span> Payment Gateway Info</h4>
+              <p>
+                ${pay ? `
+                  Gateway: <strong>${pay.method === 'razorpay' ? 'Razorpay Gateway' : pay.method || 'Online'}</strong><br>
+                  Status: ${statusBadge(pay.status)}<br>
+                  Payment Ref: <code style="font-size:0.78rem;">${pay.transaction_ref || pay.razorpay_payment_id || '—'}</code><br>
+                  ${pay.razorpay_order_id ? `<span style="font-size:0.75rem;color:var(--text-muted);">Razorpay ID: ${pay.razorpay_order_id}</span>` : ''}
+                ` : '<span style="color:var(--text-muted);">No payment record found</span>'}
+              </p>
             </div>
           </div>
-          <h4 style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:10px;">🛒 Items (${items.length})</h4>
-          <ul class="order-items-list">
-            ${items.map(i => `
-              <li>
-                <span class="order-item-name">${i.product_name}</span>
-                <span class="order-item-qty">×${i.quantity}</span>
-                <span class="order-item-price">${formatPrice(i.unit_price * i.quantity)}</span>
-              </li>
-            `).join('')}
-          </ul>
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:0.85rem;color:var(--text-muted);">
-              Subtotal: ${formatPrice(o.subtotal)} ${o.discount > 0 ? `<br>Discount: -${formatPrice(o.discount)}` : ''}
+
+          <h4 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin:16px 0 8px 0;">
+            🛒 Purchased Handicrafts (${items.length} items)
+          </h4>
+          <table class="order-items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Brand</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(i => `
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <img src="${i.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
+                           alt="${i.product_name}"
+                           style="width:36px;height:36px;border-radius:6px;object-fit:cover;background:#eee;"
+                           onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';">
+                      <strong>${i.product_name}</strong>
+                    </div>
+                  </td>
+                  <td style="font-size:0.78rem;color:var(--accent);">${i.brand || 'Artisan'}</td>
+                  <td><strong>×${i.quantity}</strong></td>
+                  <td>${formatPrice(i.unit_price)}</td>
+                  <td style="text-align:right;font-weight:700;font-family:'Lora',serif;">${formatPrice(i.unit_price * i.quantity)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px;padding:14px 18px;background:rgba(255,255,255,0.85);border-radius:var(--radius-md);border:1px solid rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">
+              Cart Subtotal: <strong>${formatPrice(o.subtotal || o.total_amount)}</strong><br>
+              ${o.discount > 0 ? `Coupon Discount: <strong style="color:var(--danger);">- ${formatPrice(o.discount)}</strong><br>` : ''}
+              Express Delivery: <strong style="color:var(--success);">FREE</strong>
             </div>
-            <div style="font-family:'Lora',serif;font-size:1.3rem;font-weight:700;color:var(--primary-dark);">
-              ${formatPrice(o.total_amount)}
+            <div style="text-align:right;">
+              <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Grand Total</div>
+              <div style="font-family:'Lora',serif;font-size:1.45rem;font-weight:800;color:var(--primary-dark);">
+                ${formatPrice(o.total_amount)}
+              </div>
             </div>
           </div>
         `;
 
-        openModal(`Order #${o.order_id}`, bodyHtml,
+        openModal(`Order #${o.order_id} Details`, bodyHtml,
           `<button class="btn btn-outline btn-sm" onclick="closeModal()">Close</button>`,
           true
         );
@@ -1208,9 +2064,37 @@
       }
     }
 
-    // ══════════════════════════════════════════════
-    //  PRODUCTS CRUD
-    // ══════════════════════════════════════════════
+    async function saveStatusFromModal(orderId) {
+      const select = document.getElementById('modal-status-select');
+      if (!select) return;
+      const newStatus = select.value;
+      await updateOrderStatus(orderId, newStatus);
+      closeModal();
+    }
+
+    function exportOrdersCSV() {
+      if (!allOrders.length) {
+        showToast('No orders to export.', 'warning');
+        return;
+      }
+      const header = ['Order ID', 'Customer Name', 'Email', 'Total Amount (INR)', 'Order Status', 'Payment Method', 'Payment Status', 'Placed Date'];
+      const rows = allOrders.map(o => [
+        `#${o.order_id}`,
+        o.user_name || '',
+        o.email || '',
+        o.total_amount || 0,
+        o.status || '',
+        o.payment_method || 'Online',
+        o.payment_status || 'completed',
+        new Date(o.created_at).toISOString()
+      ]);
+      downloadCSV(`BharatBazzar_Orders_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      showToast('Orders exported to CSV successfully.', 'success');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  PRODUCTS CRUD & FILTERS
+    // ════════════════════════════════════════════════════════
 
     let allProducts = [];
     let allCategoriesCache = [];
@@ -1222,51 +2106,90 @@
         if (!ok) throw new Error(data.message);
         allProducts = data.products || [];
         loaded.products = true;
-        renderProducts(allProducts);
 
-        // Also load categories for the dropdowns
+        // Categories dropdown cache
         const catRes = await api.get('/admin/categories');
-        if (catRes.ok) allCategoriesCache = catRes.data.categories || [];
+        if (catRes.ok) {
+          allCategoriesCache = catRes.data.categories || [];
+          populateCategoryDropdowns(allCategoriesCache);
+        }
+
+        renderProducts();
       } catch (e) {
         showToast('Failed to load products: ' + e.message, 'error');
       }
     }
 
-    function renderProducts(products) {
-      document.getElementById('products-count').textContent = `${products.length} products`;
-      document.getElementById('products-tbody').innerHTML = products.length
-        ? products.map(p => `
-          <tr style="${!p.is_active ? 'opacity:0.5;' : ''}">
-            <td><strong>#${p.product_id}</strong></td>
-            <td>
-              <div class="table-product-cell">
-                <img class="table-product-img" src="${p.image_url || 'https://via.placeholder.com/40'}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/40?text=?'">
-                <div>
-                  <strong>${p.name}</strong><br>
-                  <span style="font-size:0.72rem;color:var(--accent);text-transform:uppercase;font-weight:700;">${p.brand || ''}</span>
-                </div>
-              </div>
-            </td>
-            <td>${p.category || '—'}</td>
-            <td>${formatPrice(p.price)}</td>
-            <td>${stockBadge(p.stock)}</td>
-            <td>${p.avg_rating > 0 ? parseFloat(p.avg_rating).toFixed(1) + ' ★' : '—'}</td>
-            <td><span class="badge badge-${p.is_active ? 'active' : 'inactive'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn" title="Edit" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️</button>
-                <button class="action-btn danger" title="${p.is_active ? 'Deactivate' : 'Already inactive'}" onclick="deleteProduct(${p.product_id}, '${p.name.replace(/'/g, "\\'")}')">🗑️</button>
-              </div>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No products found.</td></tr>';
+    function populateCategoryDropdowns(cats) {
+      const optionsHtml = '<option value="">All Categories</option>' +
+        cats.map(c => `<option value="${c.category_id}">${c.name}</option>`).join('');
+
+      const prodFilter = document.getElementById('product-category-filter');
+      if (prodFilter) prodFilter.innerHTML = optionsHtml;
+
+      const invFilter = document.getElementById('inventory-category-filter');
+      if (invFilter) invFilter.innerHTML = optionsHtml;
     }
 
     function filterProducts() {
-      const q = document.getElementById('product-search').value.toLowerCase();
-      renderProducts(allProducts.filter(p =>
-        `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q)
-      ));
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const q = (document.getElementById('product-search')?.value || '').toLowerCase().trim();
+      const catId = document.getElementById('product-category-filter')?.value || '';
+      const stockFilter = document.getElementById('product-stock-filter')?.value || 'all';
+
+      let filtered = allProducts;
+
+      if (catId) {
+        filtered = filtered.filter(p => String(p.category_id) === String(catId));
+      }
+
+      if (stockFilter === 'in_stock') {
+        filtered = filtered.filter(p => p.stock >= 10);
+      } else if (stockFilter === 'low_stock') {
+        filtered = filtered.filter(p => p.stock > 0 && p.stock < 10);
+      } else if (stockFilter === 'out_of_stock') {
+        filtered = filtered.filter(p => p.stock <= 0);
+      }
+
+      if (q) {
+        filtered = filtered.filter(p =>
+          `#${p.product_id} ${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q)
+        );
+      }
+
+      const tbody = document.getElementById('products-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(p => `
+        <tr style="${!p.is_active ? 'opacity:0.55;' : ''}">
+          <td><strong>#${p.product_id}</strong></td>
+          <td>
+            <div class="table-product-cell">
+              <img class="table-product-img" src="${p.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
+                   alt="${p.name}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';">
+              <div>
+                <strong>${p.name}</strong><br>
+                <span style="font-size:0.72rem;color:var(--accent);text-transform:uppercase;font-weight:700;">${p.brand || 'Artisan'}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-percent" style="font-weight:600;">${p.category || 'Uncategorized'}</span></td>
+          <td><strong style="font-family:'Lora',serif;color:var(--primary-dark);">${formatPrice(p.price)}</strong></td>
+          <td>${stockBadge(p.stock)}</td>
+          <td>${p.avg_rating > 0 ? parseFloat(p.avg_rating).toFixed(1) + ' ★' : '<span style="color:var(--text-muted);">—</span>'}</td>
+          <td><span class="badge badge-${p.is_active ? 'active' : 'inactive'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn" title="Edit Product" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>✏️</button>
+              <button class="action-btn danger" title="${p.is_active ? 'Deactivate Product' : 'Already Inactive'}"
+                      onclick="deleteProduct(${p.product_id}, '${p.name.replace(/'/g, "\\'")}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">No products matching current filter.</td></tr>`;
     }
 
     function productFormHtml(p = {}) {
@@ -1278,41 +2201,48 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Product Name *</label>
-            <input type="text" class="form-control" id="pf-name" value="${p.name || ''}" placeholder="e.g. Handmade Clay Mug">
+            <input type="text" class="form-control" id="pf-name" value="${p.name || ''}" placeholder="e.g. Handmade Terracotta Planter">
           </div>
           <div class="form-group">
-            <label class="form-label">Brand</label>
-            <input type="text" class="form-control" id="pf-brand" value="${p.brand || ''}" placeholder="e.g. Mitti Kala">
+            <label class="form-label">Artisan Brand</label>
+            <input type="text" class="form-control" id="pf-brand" value="${p.brand || ''}" placeholder="e.g. Mitti Kala Studio">
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Description</label>
-          <textarea class="form-control" id="pf-desc" rows="3" placeholder="Product description…">${p.description || ''}</textarea>
+          <textarea class="form-control" id="pf-desc" rows="3" placeholder="Artisanal story, craft heritage, materials…">${p.description || ''}</textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Price (₹) *</label>
-            <input type="number" class="form-control" id="pf-price" value="${p.price || ''}" step="0.01" min="0">
+            <label class="form-label">Price (₹ INR) *</label>
+            <input type="number" class="form-control" id="pf-price" value="${p.price || ''}" step="0.01" min="0" placeholder="1299.00">
           </div>
           <div class="form-group">
-            <label class="form-label">Category</label>
+            <label class="form-label">Category *</label>
             <select class="form-control" id="pf-category">
-              <option value="">— Select —</option>
+              <option value="">— Select Category —</option>
               ${catOptions}
             </select>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Image URL</label>
-          <input type="text" class="form-control" id="pf-image" value="${p.image_url || ''}" placeholder="https://…">
+          <input type="text" class="form-control" id="pf-image" value="${p.image_url || ''}"
+                 placeholder="https://images.unsplash.com/..." oninput="updateImagePreview(this.value)">
+          <div class="image-preview-box" id="pf-image-preview-box">
+            ${p.image_url ? `<img src="${p.image_url}" onerror="this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'">` : '<span style="font-size:0.8rem;color:var(--text-muted);">Enter an image URL above to preview</span>'}
+          </div>
         </div>
         ${!p.product_id ? `
         <div class="form-group">
-          <label class="form-label">Initial Stock</label>
-          <input type="number" class="form-control" id="pf-stock" value="0" min="0">
+          <label class="form-label">Initial Warehouse Stock (Units)</label>
+          <input type="number" class="form-control" id="pf-stock" value="25" min="0">
         </div>` : `
-        <div class="form-group">
-          <label class="form-label">Active Status</label>
+        <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(0,0,0,0.03);border-radius:var(--radius-md);">
+          <div>
+            <strong>Catalog Visibility</strong>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0;">When active, buyers can browse & purchase this product.</p>
+          </div>
           <label class="toggle">
             <input type="checkbox" id="pf-active" ${p.is_active ? 'checked' : ''}>
             <span class="toggle-slider"></span>
@@ -1321,26 +2251,37 @@
       `;
     }
 
+    function updateImagePreview(url) {
+      const box = document.getElementById('pf-image-preview-box');
+      if (!box) return;
+      if (url && url.startsWith('http')) {
+        box.innerHTML = `<img src="${url}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'">`;
+      } else {
+        box.innerHTML = `<span style="font-size:0.8rem;color:var(--text-muted);">Enter an image URL above to preview</span>`;
+      }
+    }
+
     function openProductModal(product = null) {
       const isEdit = !!product;
       openModal(
-        isEdit ? 'Edit Product' : 'Add New Product',
+        isEdit ? `Edit: ${product.name}` : 'Add New Handicraft Product',
         productFormHtml(product || {}),
         `<button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
-         <button class="btn btn-primary btn-sm" onclick="saveProduct(${product ? product.product_id : 'null'})">${isEdit ? 'Update' : 'Create'}</button>`
+         <button class="btn btn-primary btn-sm" onclick="saveProduct(${product ? product.product_id : 'null'})">
+           ${isEdit ? 'Update Product' : 'Create Product'}
+         </button>`,
+        true
       );
     }
 
-    function editProduct(product) {
-      openProductModal(product);
-    }
+    function editProduct(product) { openProductModal(product); }
 
     async function saveProduct(productId) {
       const name = document.getElementById('pf-name').value.trim();
       const price = document.getElementById('pf-price').value;
 
       if (!name || !price) {
-        showToast('Name and price are required.', 'warning');
+        showToast('Product name and price are required.', 'warning');
         return;
       }
 
@@ -1355,14 +2296,12 @@
 
       try {
         if (productId) {
-          // Update
           const activeEl = document.getElementById('pf-active');
           if (activeEl) body.is_active = activeEl.checked;
           const { ok, data } = await api.put(`/admin/products/${productId}`, body);
           if (!ok) throw new Error(data.message);
           showToast(data.message, 'success');
         } else {
-          // Create
           const stockEl = document.getElementById('pf-stock');
           body.stock = stockEl ? parseInt(stockEl.value) || 0 : 0;
           const { ok, data } = await api.post('/admin/products', body);
@@ -1381,7 +2320,7 @@
     function deleteProduct(id, name) {
       confirmDialog('Deactivate Product',
         `Are you sure you want to deactivate "${name}"?`,
-        'The product will be hidden from the store.',
+        'The product will be hidden from customer storefront searches.',
         async () => {
           try {
             const { ok, data } = await api.delete(`/admin/products/${id}`);
@@ -1397,9 +2336,169 @@
       );
     }
 
-    // ══════════════════════════════════════════════
-    //  CATEGORIES CRUD
-    // ══════════════════════════════════════════════
+    function exportProductsCSV() {
+      if (!allProducts.length) {
+        showToast('No products to export.', 'warning');
+        return;
+      }
+      const header = ['Product ID', 'Name', 'Brand', 'Category', 'Price (INR)', 'Stock Level', 'Rating', 'Active'];
+      const rows = allProducts.map(p => [
+        p.product_id,
+        p.name || '',
+        p.brand || '',
+        p.category || '',
+        p.price || 0,
+        p.stock || 0,
+        p.avg_rating || 0,
+        p.is_active ? 'Yes' : 'No'
+      ]);
+      downloadCSV(`BharatBazzar_Products_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      showToast('Products catalog exported to CSV.', 'success');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  INVENTORY MANAGEMENT (WITH RAPID BUMP ADJUSTER)
+    // ════════════════════════════════════════════════════════
+
+    let allInventory = [];
+    let inventoryLowStockOnly = false;
+
+    async function loadInventory() {
+      loaded.inventory = false;
+      try {
+        const { ok, data } = await api.get('/admin/products');
+        if (!ok) throw new Error(data.message);
+        allInventory = (data.products || []).filter(p => p.is_active);
+        loaded.inventory = true;
+        renderInventory();
+      } catch (e) {
+        showToast('Failed to load inventory: ' + e.message, 'error');
+      }
+    }
+
+    function toggleInventoryLowStockFilter() {
+      inventoryLowStockOnly = !inventoryLowStockOnly;
+      const btn = document.getElementById('inventory-low-stock-toggle');
+      if (btn) btn.classList.toggle('active', inventoryLowStockOnly);
+      renderInventory();
+    }
+
+    function filterInventory() {
+      renderInventory();
+    }
+
+    function renderInventory() {
+      const q = (document.getElementById('inventory-search')?.value || '').toLowerCase().trim();
+      const catId = document.getElementById('inventory-category-filter')?.value || '';
+
+      let filtered = allInventory;
+
+      if (inventoryLowStockOnly) {
+        filtered = filtered.filter(p => p.stock < 10);
+      }
+
+      if (catId) {
+        filtered = filtered.filter(p => String(p.category_id) === String(catId));
+      }
+
+      if (q) {
+        filtered = filtered.filter(p =>
+          `#${p.product_id} ${p.name} ${p.category}`.toLowerCase().includes(q)
+        );
+      }
+
+      const tbody = document.getElementById('inventory-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(p => `
+        <tr>
+          <td><strong>#${p.product_id}</strong></td>
+          <td>
+            <div class="table-product-cell">
+              <img class="table-product-img" src="${p.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
+                   alt="${p.name}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';">
+              <div>
+                <strong>${p.name}</strong><br>
+                <span style="font-size:0.75rem;color:var(--text-muted);">${p.brand || 'Artisan'}</span>
+              </div>
+            </div>
+          </td>
+          <td>${p.category || '—'}</td>
+          <td><strong style="font-family:'Lora',serif;">${formatPrice(p.price)}</strong></td>
+          <td>${stockBadge(p.stock)}</td>
+          <td><span class="badge badge-${p.stock < 10 ? 'low' : 'ok'}">${p.stock < 10 ? 'Restock Needed' : 'Healthy'}</span></td>
+          <td>
+            <div class="quick-stock-wrap">
+              <button class="quick-stock-btn" onclick="bumpStock(${p.product_id}, -5)" title="-5 Units">-5</button>
+              <button class="quick-stock-btn" onclick="bumpStock(${p.product_id}, -1)" title="-1 Unit">-1</button>
+              <input type="number" class="stock-input" id="stock-${p.product_id}" value="${p.stock}" min="0">
+              <button class="quick-stock-btn" onclick="bumpStock(${p.product_id}, 1)" title="+1 Unit">+1</button>
+              <button class="quick-stock-btn" onclick="bumpStock(${p.product_id}, 5)" title="+5 Units">+5</button>
+              <button class="btn btn-primary btn-sm" style="padding:3px 8px;font-size:0.75rem;margin-left:4px;" onclick="saveStock(${p.product_id})">Save</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">No inventory matching criteria.</td></tr>`;
+    }
+
+    async function bumpStock(productId, delta) {
+      const input = document.getElementById(`stock-${productId}`);
+      if (!input) return;
+      let current = parseInt(input.value) || 0;
+      let next = Math.max(0, current + delta);
+      input.value = next;
+      // Auto-save bump for frictionless warehouse management
+      await saveStock(productId);
+    }
+
+    async function saveStock(productId) {
+      const input = document.getElementById(`stock-${productId}`);
+      const quantity = parseInt(input.value);
+
+      if (isNaN(quantity) || quantity < 0) {
+        showToast('Please enter a valid stock number.', 'warning');
+        return;
+      }
+
+      try {
+        const { ok, data } = await api.put(`/admin/inventory/${productId}`, { quantity });
+        if (!ok) throw new Error(data.message);
+        showToast(data.message, 'success');
+
+        // Optimistic local update
+        const item = allInventory.find(p => p.product_id === productId);
+        if (item) item.stock = quantity;
+        const prod = allProducts.find(p => p.product_id === productId);
+        if (prod) prod.stock = quantity;
+
+        renderInventory();
+        loadStats();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function exportInventoryCSV() {
+      if (!allInventory.length) {
+        showToast('No inventory to export.', 'warning');
+        return;
+      }
+      const header = ['Product ID', 'Item Name', 'Category', 'Price (INR)', 'Stock Quantity', 'Stock Status'];
+      const rows = allInventory.map(p => [
+        p.product_id,
+        p.name || '',
+        p.category || '',
+        p.price || 0,
+        p.stock || 0,
+        p.stock < 10 ? 'Low Stock' : 'Healthy'
+      ]);
+      downloadCSV(`BharatBazzar_Inventory_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      showToast('Inventory report exported to CSV.', 'success');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  CATEGORIES MANAGEMENT
+    // ════════════════════════════════════════════════════════
 
     let allCategoriesFull = [];
 
@@ -1411,30 +2510,42 @@
         allCategoriesFull = data.categories || [];
         allCategoriesCache = allCategoriesFull;
         loaded.categories = true;
-        renderCategories(allCategoriesFull);
+        renderCategories();
       } catch (e) {
         showToast('Failed to load categories: ' + e.message, 'error');
       }
     }
 
-    function renderCategories(cats) {
-      document.getElementById('categories-count').textContent = `${cats.length} categories`;
-      document.getElementById('categories-tbody').innerHTML = cats.length
-        ? cats.map(c => `
-          <tr>
-            <td><strong>#${c.category_id}</strong></td>
-            <td><strong>${c.name}</strong></td>
-            <td style="color:var(--text-muted);font-size:0.82rem;">${c.description || '—'}</td>
-            <td>${c.parent_name || '—'}</td>
-            <td><span class="badge badge-${c.product_count > 0 ? 'active' : 'inactive'}">${c.product_count} products</span></td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn" title="Edit" onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️</button>
-                <button class="action-btn danger" title="Delete" onclick="deleteCategory(${c.category_id}, '${c.name.replace(/'/g, "\\'")}', ${c.product_count})">🗑️</button>
-              </div>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">No categories found.</td></tr>';
+    function filterCategories() {
+      renderCategories();
+    }
+
+    function renderCategories() {
+      const q = (document.getElementById('category-search')?.value || '').toLowerCase().trim();
+      let filtered = allCategoriesFull;
+      if (q) {
+        filtered = filtered.filter(c => `${c.name} ${c.description} ${c.parent_name}`.toLowerCase().includes(q));
+      }
+
+      const tbody = document.getElementById('categories-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(c => `
+        <tr>
+          <td><strong>#${c.category_id}</strong></td>
+          <td><strong>${c.name}</strong></td>
+          <td style="color:var(--text-muted);font-size:0.84rem;">${c.description || '—'}</td>
+          <td>${c.parent_name ? `<span class="badge badge-percent">${c.parent_name}</span>` : '<span style="color:var(--text-muted);">Root Collection</span>'}</td>
+          <td><span class="badge badge-${c.product_count > 0 ? 'active' : 'inactive'}">${c.product_count} products</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn" title="Edit Category" onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️</button>
+              <button class="action-btn danger" title="Delete Category"
+                      onclick="deleteCategory(${c.category_id}, '${c.name.replace(/'/g, "\\'")}', ${c.product_count})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">No categories found.</td></tr>`;
     }
 
     function categoryFormHtml(c = {}) {
@@ -1446,16 +2557,16 @@
       return `
         <div class="form-group">
           <label class="form-label">Category Name *</label>
-          <input type="text" class="form-control" id="cf-name" value="${c.name || ''}" placeholder="e.g. Pottery & Ceramics">
+          <input type="text" class="form-control" id="cf-name" value="${c.name || ''}" placeholder="e.g. Copper & Brassware">
         </div>
         <div class="form-group">
           <label class="form-label">Description</label>
-          <textarea class="form-control" id="cf-desc" rows="2" placeholder="Category description…">${c.description || ''}</textarea>
+          <textarea class="form-control" id="cf-desc" rows="3" placeholder="Artisanal craft domain, technique heritage…">${c.description || ''}</textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">Parent Category</label>
+          <label class="form-label">Parent Category Hierarchy</label>
           <select class="form-control" id="cf-parent">
-            <option value="">— None (top-level) —</option>
+            <option value="">— None (Top-Level Category) —</option>
             ${parentOptions}
           </select>
         </div>
@@ -1465,10 +2576,12 @@
     function openCategoryModal(cat = null) {
       const isEdit = !!cat;
       openModal(
-        isEdit ? 'Edit Category' : 'Add New Category',
+        isEdit ? `Edit Category: ${cat.name}` : 'Add New Category',
         categoryFormHtml(cat || {}),
         `<button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
-         <button class="btn btn-primary btn-sm" onclick="saveCategory(${cat ? cat.category_id : 'null'})">${isEdit ? 'Update' : 'Create'}</button>`
+         <button class="btn btn-primary btn-sm" onclick="saveCategory(${cat ? cat.category_id : 'null'})">
+           ${isEdit ? 'Update Category' : 'Create Category'}
+         </button>`
       );
     }
 
@@ -1505,12 +2618,12 @@
 
     function deleteCategory(id, name, productCount) {
       if (productCount > 0) {
-        showToast(`Cannot delete "${name}" — ${productCount} products use this category.`, 'warning');
+        showToast(`Cannot delete "${name}" — ${productCount} active products are currently in this category. Reassign them first.`, 'warning');
         return;
       }
       confirmDialog('Delete Category',
-        `Are you sure you want to delete "${name}"?`,
-        'This action cannot be undone.',
+        `Are you sure you want to delete category "${name}"?`,
+        'This action is irreversible.',
         async () => {
           try {
             const { ok, data } = await api.delete(`/admin/categories/${id}`);
@@ -1526,82 +2639,9 @@
       );
     }
 
-    // ══════════════════════════════════════════════
-    //  INVENTORY
-    // ══════════════════════════════════════════════
-
-    let allInventory = [];
-
-    async function loadInventory() {
-      loaded.inventory = false;
-      try {
-        const { ok, data } = await api.get('/admin/products');
-        if (!ok) throw new Error(data.message);
-        allInventory = (data.products || []).filter(p => p.is_active);
-        loaded.inventory = true;
-        renderInventory(allInventory);
-      } catch (e) {
-        showToast('Failed to load inventory: ' + e.message, 'error');
-      }
-    }
-
-    function renderInventory(products) {
-      document.getElementById('inventory-count').textContent = `${products.length} products`;
-      document.getElementById('inventory-tbody').innerHTML = products.length
-        ? products.map(p => `
-          <tr>
-            <td><strong>#${p.product_id}</strong></td>
-            <td>
-              <div class="table-product-cell">
-                <img class="table-product-img" src="${p.image_url || 'https://via.placeholder.com/40'}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/40?text=?'">
-                <strong>${p.name}</strong>
-              </div>
-            </td>
-            <td>${p.category || '—'}</td>
-            <td>${formatPrice(p.price)}</td>
-            <td>${stockBadge(p.stock)}</td>
-            <td><span class="badge badge-${p.stock < 10 ? 'low' : 'ok'}">${p.stock < 10 ? 'Low' : 'OK'}</span></td>
-            <td>
-              <div class="action-btns" style="gap:6px;">
-                <input type="number" class="stock-input" id="stock-${p.product_id}" value="${p.stock}" min="0">
-                <button class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:0.75rem;" onclick="updateStock(${p.product_id})">Save</button>
-              </div>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No products found.</td></tr>';
-    }
-
-    function filterInventory() {
-      const q = document.getElementById('inventory-search').value.toLowerCase();
-      renderInventory(allInventory.filter(p =>
-        `${p.name} ${p.category}`.toLowerCase().includes(q)
-      ));
-    }
-
-    async function updateStock(productId) {
-      const input = document.getElementById(`stock-${productId}`);
-      const quantity = parseInt(input.value);
-
-      if (isNaN(quantity) || quantity < 0) {
-        showToast('Enter a valid quantity.', 'warning');
-        return;
-      }
-
-      try {
-        const { ok, data } = await api.put(`/admin/inventory/${productId}`, { quantity });
-        if (!ok) throw new Error(data.message);
-        showToast(data.message, 'success');
-        loaded.inventory = false;
-        loadInventory();
-        loadStats();
-      } catch (e) {
-        showToast(e.message, 'error');
-      }
-    }
-
-    // ══════════════════════════════════════════════
-    //  COUPONS CRUD
-    // ══════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    //  COUPONS MANAGEMENT
+    // ════════════════════════════════════════════════════════
 
     let allCoupons = [];
 
@@ -1612,36 +2652,47 @@
         if (!ok) throw new Error(data.message);
         allCoupons = data.coupons || [];
         loaded.coupons = true;
-        renderCoupons(allCoupons);
+        renderCoupons();
       } catch (e) {
         showToast('Failed to load coupons: ' + e.message, 'error');
       }
     }
 
-    function renderCoupons(coupons) {
-      document.getElementById('coupons-count').textContent = `${coupons.length} coupons`;
-      document.getElementById('coupons-tbody').innerHTML = coupons.length
-        ? coupons.map(c => `
-          <tr style="${!c.is_active ? 'opacity:0.55;' : ''}">
-            <td><strong>#${c.coupon_id}</strong></td>
-            <td><code style="font-size:0.85rem;font-weight:700;">${c.code}</code></td>
-            <td><span class="badge badge-${c.discount_type}">${c.discount_type}</span></td>
-            <td><strong>${c.discount_type === 'percent' ? c.discount_value + '%' : formatPrice(c.discount_value)}</strong></td>
-            <td>${formatPrice(c.min_order_amt)}</td>
-            <td>${c.max_uses || '∞'}</td>
-            <td>
-              <label class="toggle" title="${c.is_active ? 'Active' : 'Inactive'}">
-                <input type="checkbox" ${c.is_active ? 'checked' : ''} onchange="toggleCoupon(${c.coupon_id})">
-                <span class="toggle-slider"></span>
-              </label>
-            </td>
-            <td>
-              <div class="action-btns">
-                <button class="action-btn" title="Edit" onclick='editCoupon(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️</button>
-              </div>
-            </td>
-          </tr>`).join('')
-        : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No coupons found.</td></tr>';
+    function filterCoupons() {
+      renderCoupons();
+    }
+
+    function renderCoupons() {
+      const q = (document.getElementById('coupon-search')?.value || '').toLowerCase().trim();
+      let filtered = allCoupons;
+      if (q) {
+        filtered = filtered.filter(c => `${c.code} ${c.discount_type}`.toLowerCase().includes(q));
+      }
+
+      const tbody = document.getElementById('coupons-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(c => `
+        <tr style="${!c.is_active ? 'opacity:0.55;' : ''}">
+          <td><strong>#${c.coupon_id}</strong></td>
+          <td><code style="font-size:0.88rem;font-weight:700;padding:3px 8px;background:rgba(0,0,0,0.05);border-radius:4px;">${c.code}</code></td>
+          <td><span class="badge badge-${c.discount_type}">${c.discount_type}</span></td>
+          <td><strong style="color:var(--primary-dark);">${c.discount_type === 'percent' ? c.discount_value + '%' : formatPrice(c.discount_value)}</strong></td>
+          <td>${formatPrice(c.min_order_amt)}</td>
+          <td>${c.max_uses ? `${c.max_uses} max` : '<span style="color:var(--text-muted);">Unlimited (∞)</span>'}</td>
+          <td>
+            <label class="toggle" title="${c.is_active ? 'Active' : 'Inactive'}">
+              <input type="checkbox" ${c.is_active ? 'checked' : ''} onchange="toggleCoupon(${c.coupon_id})">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn" title="Edit Coupon" onclick='editCoupon(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">No coupons matching query.</td></tr>`;
     }
 
     function couponFormHtml(c = {}) {
@@ -1649,29 +2700,29 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Coupon Code *</label>
-            <input type="text" class="form-control" id="cpf-code" value="${c.code || ''}" placeholder="e.g. DIWALI20" style="text-transform:uppercase;">
+            <input type="text" class="form-control" id="cpf-code" value="${c.code || ''}" placeholder="e.g. UTSAV15" style="text-transform:uppercase;font-weight:700;">
           </div>
           <div class="form-group">
             <label class="form-label">Discount Type *</label>
             <select class="form-control" id="cpf-type">
               <option value="percent" ${c.discount_type === 'percent' ? 'selected' : ''}>Percentage (%)</option>
-              <option value="flat" ${c.discount_type === 'flat' ? 'selected' : ''}>Flat Amount (₹)</option>
+              <option value="flat" ${c.discount_type === 'flat' ? 'selected' : ''}>Flat Discount (₹ INR)</option>
             </select>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Discount Value *</label>
-            <input type="number" class="form-control" id="cpf-value" value="${c.discount_value || ''}" step="0.01" min="0">
+            <input type="number" class="form-control" id="cpf-value" value="${c.discount_value || ''}" step="0.01" min="0" placeholder="15">
           </div>
           <div class="form-group">
-            <label class="form-label">Min Order Amount (₹)</label>
-            <input type="number" class="form-control" id="cpf-min" value="${c.min_order_amt || 0}" step="0.01" min="0">
+            <label class="form-label">Minimum Order Requirement (₹)</label>
+            <input type="number" class="form-control" id="cpf-min" value="${c.min_order_amt || 0}" step="0.01" min="0" placeholder="500">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Max Uses (leave blank for unlimited)</label>
-          <input type="number" class="form-control" id="cpf-max" value="${c.max_uses || ''}" min="1" placeholder="Unlimited">
+          <label class="form-label">Usage Limit (Leave blank for Unlimited)</label>
+          <input type="number" class="form-control" id="cpf-max" value="${c.max_uses || ''}" min="1" placeholder="e.g. 500 redemptions">
         </div>
       `;
     }
@@ -1679,10 +2730,12 @@
     function openCouponModal(coupon = null) {
       const isEdit = !!coupon;
       openModal(
-        isEdit ? 'Edit Coupon' : 'Add New Coupon',
+        isEdit ? `Edit Coupon: ${coupon.code}` : 'Create Discount Coupon',
         couponFormHtml(coupon || {}),
         `<button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
-         <button class="btn btn-primary btn-sm" onclick="saveCoupon(${coupon ? coupon.coupon_id : 'null'})">${isEdit ? 'Update' : 'Create'}</button>`
+         <button class="btn btn-primary btn-sm" onclick="saveCoupon(${coupon ? coupon.coupon_id : 'null'})">
+           ${isEdit ? 'Update Coupon' : 'Create Coupon'}
+         </button>`
       );
     }
 
@@ -1694,7 +2747,7 @@
       const discount_value = document.getElementById('cpf-value').value;
 
       if (!code || !discount_value) {
-        showToast('Code and value are required.', 'warning');
+        showToast('Coupon code and discount value are required.', 'warning');
         return;
       }
 
@@ -1738,9 +2791,9 @@
       }
     }
 
-    // ══════════════════════════════════════════════
-    //  USERS
-    // ══════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+    //  USERS MANAGEMENT
+    // ════════════════════════════════════════════════════════
 
     let allUsers = [];
     const currentUser = getUser();
@@ -1752,48 +2805,67 @@
         if (!ok) throw new Error(data.message);
         allUsers = data.users || [];
         loaded.users = true;
-        renderUsers(allUsers);
+        renderUsers();
       } catch (e) {
         showToast('Failed to load users: ' + e.message, 'error');
       }
     }
 
-    function renderUsers(users) {
-      document.getElementById('users-count').textContent = `${users.length} users`;
-      document.getElementById('users-tbody').innerHTML = users.length
-        ? users.map(u => {
-          const isSelf = currentUser && currentUser.user_id === u.user_id;
-          return `
+    function filterUsers() {
+      renderUsers();
+    }
+
+    function renderUsers() {
+      const q = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
+      const roleFilter = document.getElementById('user-role-filter')?.value || 'all';
+
+      let filtered = allUsers;
+
+      if (roleFilter !== 'all') {
+        filtered = filtered.filter(u => u.role === roleFilter);
+      }
+
+      if (q) {
+        filtered = filtered.filter(u => `${u.name} ${u.email} ${u.phone} ${u.role}`.toLowerCase().includes(q));
+      }
+
+      const tbody = document.getElementById('users-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = filtered.length ? filtered.map(u => {
+        const isSelf = currentUser && currentUser.user_id === u.user_id;
+        const isVIP = u.total_spent >= 5000;
+        return `
           <tr>
             <td><strong>#${u.user_id}</strong></td>
-            <td><strong>${u.name}</strong>${isSelf ? ' <span style="font-size:0.7rem;color:var(--primary);">(You)</span>' : ''}</td>
+            <td>
+              <strong>${u.name}</strong>
+              ${isSelf ? '<span class="badge badge-admin" style="font-size:0.65rem;margin-left:4px;">You</span>' : ''}
+              ${isVIP ? '<span class="badge badge-vip" style="font-size:0.65rem;margin-left:4px;">⭐ VIP</span>' : ''}
+            </td>
             <td style="color:var(--text-muted);font-size:0.82rem;">${u.email}</td>
             <td style="font-size:0.82rem;">${u.phone || '—'}</td>
             <td>
-              <select class="form-control" style="font-size:0.75rem;padding:2px 6px;height:auto;width:100px;"
+              <select class="table-select" style="font-size:0.75rem;padding:3px 8px;font-weight:600;"
                       onchange="changeUserRole(${u.user_id}, this.value)" ${isSelf ? 'disabled' : ''}>
                 <option value="customer" ${u.role==='customer'?'selected':''}>Customer</option>
                 <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
               </select>
             </td>
-            <td>${u.total_orders}</td>
-            <td><strong>${formatPrice(u.total_spent)}</strong></td>
-            <td>${fmtDate(u.created_at)}</td>
+            <td><strong>${u.total_orders}</strong></td>
+            <td><strong style="font-family:'Lora',serif;color:var(--primary-dark);">${formatPrice(u.total_spent)}</strong></td>
+            <td style="font-size:0.8rem;">${fmtDate(u.created_at)}</td>
             <td>
               <div class="action-btns">
-                ${!isSelf ? `<button class="action-btn danger" title="Delete User" onclick="deleteUser(${u.user_id}, '${u.name.replace(/'/g, "\\'")}')">🗑️</button>` : ''}
+                ${!isSelf ? `
+                  <button class="action-btn danger" title="${u.total_orders > 0 ? 'Cannot delete users with active orders' : 'Delete User Account'}"
+                          onclick="deleteUser(${u.user_id}, '${u.name.replace(/'/g, "\\'")}', ${u.total_orders})">🗑️</button>
+                ` : '<span style="font-size:0.75rem;color:var(--text-muted);">Protected</span>'}
               </div>
             </td>
-          </tr>`;
-        }).join('')
-        : '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted);">No users found.</td></tr>';
-    }
-
-    function filterUsers() {
-      const q = document.getElementById('user-search').value.toLowerCase();
-      renderUsers(allUsers.filter(u =>
-        `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(q)
-      ));
+          </tr>
+        `;
+      }).join('') : `<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">No users matching query.</td></tr>`;
     }
 
     async function changeUserRole(userId, role) {
@@ -1807,14 +2879,18 @@
       } catch (e) {
         showToast(e.message, 'error');
         loaded.users = false;
-        loadUsers(); // revert
+        loadUsers();
       }
     }
 
-    function deleteUser(id, name) {
-      confirmDialog('Delete User',
-        `Are you sure you want to delete "${name}"?`,
-        'This will permanently remove the user and all their data (cart, addresses, etc.).',
+    function deleteUser(id, name, orderCount) {
+      if (orderCount > 0) {
+        showToast(`Cannot delete user "${name}" because they have ${orderCount} order(s) on record.`, 'warning');
+        return;
+      }
+      confirmDialog('Delete User Account',
+        `Are you sure you want to permanently delete account "${name}"?`,
+        'All associated cart and profile data will be permanently removed.',
         async () => {
           try {
             const { ok, data } = await api.delete(`/admin/users/${id}`);
@@ -1830,62 +2906,140 @@
       );
     }
 
-    // ══════════════════════════════════════════════
-    //  TOP PRODUCTS (Analytics)
-    // ══════════════════════════════════════════════
+    function exportUsersCSV() {
+      if (!allUsers.length) {
+        showToast('No users to export.', 'warning');
+        return;
+      }
+      const header = ['User ID', 'Full Name', 'Email', 'Phone', 'Role', 'Total Orders', 'Total Spent (INR)', 'Joined Date'];
+      const rows = allUsers.map(u => [
+        u.user_id,
+        u.name || '',
+        u.email || '',
+        u.phone || '',
+        u.role || 'customer',
+        u.total_orders || 0,
+        u.total_spent || 0,
+        new Date(u.created_at).toISOString()
+      ]);
+      downloadCSV(`BharatBazzar_Customers_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      showToast('Customer directory exported to CSV.', 'success');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  TOP PRODUCTS LEADERBOARD
+    // ════════════════════════════════════════════════════════
+
+    let allTopProducts = [];
 
     async function loadTopProducts() {
       loaded['top-products'] = false;
       try {
-        const { ok, data } = await api.get('/admin/top-products?limit=20');
+        const { ok, data } = await api.get('/admin/top-products?limit=30');
         if (!ok) throw new Error(data.message);
-        const products = data.products || [];
+        allTopProducts = data.products || [];
         loaded['top-products'] = true;
 
-        document.getElementById('top-products-count').textContent = `${products.length} products`;
+        // Render Overview Preview (Top 5)
+        const overviewEl = document.getElementById('overview-products-body');
+        if (overviewEl) {
+          overviewEl.innerHTML = allTopProducts.slice(0, 5).length ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Product</th>
+                  <th>Sold</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allTopProducts.slice(0, 5).map((p, i) => `
+                  <tr>
+                    <td>${rankBadge(i)}</td>
+                    <td><strong>${p.product_name}</strong></td>
+                    <td><span class="badge badge-confirmed">${p.total_sold} units</span></td>
+                    <td><strong style="color:var(--primary-dark);font-family:'Lora',serif;">${formatPrice(p.total_revenue)}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : `<p style="padding:24px;color:var(--text-muted);text-align:center;">No product sales recorded yet.</p>`;
+        }
 
-        // Overview preview (top 5)
-        document.getElementById('overview-products-body').innerHTML = products.slice(0, 5).length ? `
-          <table><thead><tr><th>Rank</th><th>Product</th><th>Sold</th></tr></thead>
-          <tbody>${products.slice(0, 5).map((p, i) => `
-            <tr>
-              <td>${rankBadge(i)}</td>
-              <td>${p.product_name}</td>
-              <td><strong>${p.total_sold}</strong></td>
-            </tr>`).join('')}</tbody></table>`
-          : '<p style="padding:20px;color:var(--text-muted);">No sales data yet.</p>';
-
-        // Full table
-        document.getElementById('top-products-tbody').innerHTML = products.length
-          ? products.map((p, i) => `
+        // Full leaderboard table
+        const tbody = document.getElementById('top-products-tbody');
+        if (tbody) {
+          tbody.innerHTML = allTopProducts.length ? allTopProducts.map((p, i) => `
             <tr>
               <td>${rankBadge(i)}</td>
               <td><strong>${p.product_name}</strong></td>
-              <td style="color:var(--text-muted);">${p.category || '—'}</td>
-              <td>${formatPrice(p.price)}</td>
-              <td><strong>${p.total_sold}</strong> units</td>
-              <td>${formatPrice(p.total_revenue)}</td>
+              <td>${p.category || '—'}</td>
+              <td><strong style="font-family:'Lora',serif;">${formatPrice(p.price)}</strong></td>
+              <td><strong style="color:var(--primary);">${p.total_sold}</strong> units</td>
+              <td><strong style="color:var(--primary-dark);font-family:'Lora',serif;">${formatPrice(p.total_revenue)}</strong></td>
               <td>${p.avg_rating ? parseFloat(p.avg_rating).toFixed(1) + ' ★' : '—'}</td>
               <td>${stockBadge(p.stock_remaining)}</td>
-            </tr>`).join('')
-          : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No sales data yet.</td></tr>';
+            </tr>
+          `).join('') : `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">No sales data recorded yet.</td></tr>`;
+        }
+
       } catch (e) {
         showToast('Failed to load top products: ' + e.message, 'error');
       }
     }
 
-    // ══════════════════════════════════════════════
-    //  INIT
-    // ══════════════════════════════════════════════
+    function exportTopProductsCSV() {
+      if (!allTopProducts.length) {
+        showToast('No sales data to export.', 'warning');
+        return;
+      }
+      const header = ['Rank', 'Product Name', 'Category', 'Unit Price (INR)', 'Units Sold', 'Total Revenue (INR)', 'Customer Rating', 'Stock Remaining'];
+      const rows = allTopProducts.map((p, i) => [
+        i + 1,
+        p.product_name || '',
+        p.category || '',
+        p.price || 0,
+        p.total_sold || 0,
+        p.total_revenue || 0,
+        p.avg_rating || 0,
+        p.stock_remaining || 0
+      ]);
+      downloadCSV(`BharatBazzar_TopProducts_${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+      showToast('Sales leaderboard exported to CSV.', 'success');
+    }
+
+    function exportStoreSummaryCSV() {
+      const summary = [
+        ['BharatBazzar Store Operational Summary Snapshot'],
+        ['Generated At', new Date().toISOString()],
+        [],
+        ['Metric', 'Value'],
+        ['Total Revenue (INR)', currentStats.total_revenue || 0],
+        ['Total Orders', currentStats.total_orders || 0],
+        ['Registered Customers', currentStats.total_users || 0],
+        ['Catalog Products', currentStats.total_products || 0],
+        ['Product Categories', currentStats.total_categories || 0],
+        ['Active Coupons', currentStats.total_coupons || 0],
+        ['Low Stock Alerts', currentStats.low_stock || 0]
+      ];
+      downloadCSV(`BharatBazzar_Store_Summary_${new Date().toISOString().slice(0, 10)}.csv`, summary);
+      showToast('Store summary snapshot exported.', 'success');
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  INITIALIZATION
+    // ════════════════════════════════════════════════════════
 
     function loadAll() {
-      // Reset loaded flags
       Object.keys(loaded).forEach(k => loaded[k] = false);
       loadStats();
       loadOrders();
       loadTopProducts();
+      showToast('Store data refreshed from MongoDB Atlas.', 'info');
     }
 
+    // Load initial data
     loadAll();
   </script>
 </body>

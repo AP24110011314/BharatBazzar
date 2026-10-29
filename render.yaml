@@ -1,0 +1,39 @@
+# ==============================================================================
+# BharatBazzar — Render Infrastructure Blueprint
+# Auto-configures the Node.js / Express backend with MongoDB Atlas & Razorpay
+# Documentation: https://render.com/docs/blueprint-spec
+# ==============================================================================
+services:
+  - type: web
+    name: bharatbazzar-backend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: shopdb
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: PAYMENT_PROVIDER
+        value: razorpay
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: CURRENCY
+        value: INR
+      - key: CLIENT_URL
+        value: "*"
+

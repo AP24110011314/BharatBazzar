@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BharatBazzar — Product Details</title>
   <meta name="description" content="View handcrafted artisan product details and customer reviews." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -63,6 +65,7 @@
 <footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
 <div id="toast-container" class="toast-container"></div>
 
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
   buildNavbar('products');
@@ -94,8 +97,11 @@
 
   function renderProduct(p) {
     document.title = `${p.name} — BharatBazzar`;
-    document.getElementById('p-image').src = p.image_url || 'https://via.placeholder.com/600x600?text=No+Image';
-    document.getElementById('p-image').alt = p.name;
+    const pImg = document.getElementById('p-image');
+    const fallbackImg = 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';
+    pImg.src = p.image_url || fallbackImg;
+    pImg.onerror = () => { pImg.onerror = null; pImg.src = fallbackImg; };
+    pImg.alt = p.name;
     document.getElementById('p-name').textContent = p.name;
     document.getElementById('p-brand').textContent = p.brand || 'Handcrafted';
     document.getElementById('p-category').textContent = p.category;

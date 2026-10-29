@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BharatBazzar — My Basket</title>
   <meta name="description" content="Review your handcrafted selections before placing an order on BharatBazzar." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -63,6 +65,7 @@
 <footer class="footer"><div class="container">© 2024 BharatBazzar — Artisan Marketplace | DBMS Project</div></footer>
 <div id="toast-container" class="toast-container"></div>
 
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
   requireAuth();
@@ -103,9 +106,9 @@
     document.getElementById('cart-items-container').innerHTML = items.map(item => `
       <div class="cart-item" id="item-${item.product_id}">
         <img class="cart-item-img"
-             src="${item.image_url || 'https://via.placeholder.com/90x90?text=?'}"
+             src="${item.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
              alt="${item.name}"
-             onerror="this.src='https://via.placeholder.com/90x90?text=?'" />
+             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';" />
         <div class="cart-item-info">
           <div class="cart-item-brand">${item.brand || ''}</div>
           <div class="cart-item-name">${item.name}</div>

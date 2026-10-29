@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BharatBazzar — Checkout</title>
   <meta name="description" content="Review your order and complete payment securely on BharatBazzar." />
+  <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+  <link rel="apple-touch-icon" href="images/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body>
 
@@ -89,29 +92,32 @@
           <div class="checkout-section-title">
             <span class="step-num">2</span> Payment Method
           </div>
-          <div class="payment-methods">
-            <div class="payment-method selected" data-method="upi" onclick="selectPayment(this, 'upi')">
-              <div class="payment-icon">📱</div>UPI
+          <div class="payment-methods" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <!-- Option 1: Razorpay -->
+            <div class="payment-method selected" data-method="razorpay" onclick="selectPayment(this, 'razorpay')" style="padding: 16px 18px; text-align: left; align-items: flex-start;">
+              <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px;">
+                <div class="payment-icon" style="font-size:1.7rem;">💳</div>
+                <span class="badge badge-success" style="font-size:0.68rem; padding:3px 9px; border-radius:20px; font-weight:600; white-space:nowrap;">⚡ Recommended</span>
+              </div>
+              <strong style="font-size:0.95rem; color:var(--text-primary); margin-bottom:4px;">Razorpay Secure</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">UPI (Google Pay, PhonePe), Cards, NetBanking, Wallets</span>
             </div>
-            <div class="payment-method" data-method="credit_card" onclick="selectPayment(this, 'credit_card')">
-              <div class="payment-icon">💳</div>Credit Card
-            </div>
-            <div class="payment-method" data-method="debit_card" onclick="selectPayment(this, 'debit_card')">
-              <div class="payment-icon">🏧</div>Debit Card
-            </div>
-            <div class="payment-method" data-method="net_banking" onclick="selectPayment(this, 'net_banking')">
-              <div class="payment-icon">🏦</div>Net Banking
-            </div>
-            <div class="payment-method" data-method="wallet" onclick="selectPayment(this, 'wallet')">
-              <div class="payment-icon">👛</div>Wallet
-            </div>
-            <div class="payment-method" data-method="cod" onclick="selectPayment(this, 'cod')">
-              <div class="payment-icon">💵</div>Cash on Delivery
+
+            <!-- Option 2: Cash on Delivery -->
+            <div class="payment-method" data-method="cod" onclick="selectPayment(this, 'cod')" style="padding: 16px 18px; text-align: left; align-items: flex-start;">
+              <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:8px;">
+                <div class="payment-icon" style="font-size:1.7rem;">💵</div>
+                <span class="badge badge-secondary" style="font-size:0.68rem; padding:3px 9px; border-radius:20px; font-weight:600; white-space:nowrap;">Pay at Doorstep</span>
+              </div>
+              <strong style="font-size:0.95rem; color:var(--text-primary); margin-bottom:4px;">Cash on Delivery</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">Pay in cash when your artisan package arrives</span>
             </div>
           </div>
-          <p class="text-muted mt-2" style="font-size:0.8rem;">
-            🔒 This is a demo — payment is simulated. No real transaction occurs.
-          </p>
+
+          <div id="payment-notice" class="mt-3" style="font-size:0.82rem; color:var(--text-secondary); background:rgba(46,125,79,0.08); padding:10px 14px; border-radius:var(--radius-md); border:1px solid rgba(46,125,79,0.2); display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.1rem;">🔒</span>
+            <span id="payment-notice-text">Secured by <strong>Razorpay 256-bit SSL encryption</strong>. Supports all Indian bank cards, Google Pay, PhonePe, and UPI QR.</span>
+          </div>
         </div>
 
         <!-- Step 3: Coupon -->
@@ -160,13 +166,14 @@
 <footer class="footer"><div class="container">© 2024 BharatBazzar — DBMS Project Demo</div></footer>
 <div id="toast-container" class="toast-container"></div>
 
+<script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
   requireAuth();
   buildNavbar('checkout');
 
   let selectedAddressId = null;
-  let selectedPaymentMethod = 'upi';
+  let selectedPaymentMethod = 'razorpay';
   let cartItems = [];
   let subtotal = 0;
   let appliedDiscount = 0;  // tracks discount from validated coupon
@@ -232,8 +239,8 @@
 
     document.getElementById('checkout-items').innerHTML = cartItems.map(item => `
       <div class="order-item-mini">
-        <img src="${item.image_url || 'https://via.placeholder.com/50x50?text=?'}" alt="${item.name}"
-             onerror="this.src='https://via.placeholder.com/50x50?text=?'" />
+        <img src="${item.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}" alt="${item.name}"
+             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';" />
         <div class="order-item-mini-info">
           <div class="name">${item.name}</div>
           <div class="qty">Qty: ${item.quantity}</div>
@@ -248,6 +255,14 @@
     selectedPaymentMethod = method;
     document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
     el.classList.add('selected');
+
+    const noticeEl = document.getElementById('payment-notice-text');
+    if (!noticeEl) return;
+    if (method === 'razorpay') {
+      noticeEl.innerHTML = 'Secured by <strong>Razorpay 256-bit SSL encryption</strong>. Supports all Indian bank cards, Google Pay, PhonePe, Paytm, and UPI QR.';
+    } else if (method === 'cod') {
+      noticeEl.innerHTML = '💵 <strong>Cash on Delivery:</strong> Pay in cash when your artisan package arrives at your doorstep.';
+    }
   }
 
   // ── Address form ────────────────────────────────────────────
@@ -338,7 +353,18 @@
     document.getElementById('co-total').textContent = formatPrice(subtotal);
   }
 
-  // ── Place Order ─────────────────────────────────────────────
+  // ── Place Order & Payment Flow ─────────────────────────────
+  function handleOrderSuccess(data) {
+    localStorage.removeItem('couponCode');
+    localStorage.setItem('cartCount', 0);
+
+    document.getElementById('checkout-content').classList.add('hidden');
+    document.getElementById('success-screen').classList.remove('hidden');
+    document.getElementById('tx-ref-display').innerHTML =
+      `Order #${data.order_id} &nbsp;|&nbsp; ${data.payment_message || 'Payment confirmed'} &nbsp;|&nbsp; <span style="font-family:monospace; font-size:0.85rem; color:var(--text-secondary);">${data.transaction_ref || ''}</span>`;
+    showToast('🎉 Order placed successfully!', 'success');
+  }
+
   async function placeOrder() {
     if (!selectedAddressId) {
       showToast('Please select a delivery address.', 'warning'); return;
@@ -350,23 +376,105 @@
 
     const couponCode = document.getElementById('coupon-input').value.trim().toUpperCase();
 
+    // ── RAZORPAY PAYMENT GATEWAY FLOW ──
+    if (selectedPaymentMethod === 'razorpay') {
+      try {
+        const { ok, data } = await api.post('/orders/create-razorpay-order', {
+          address_id:  selectedAddressId,
+          coupon_code: couponCode || ''
+        });
+
+        if (!ok || !data.razorpay_order_id) {
+          showToast(data.message || 'Could not initialize Razorpay order.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '✅ Place Order & Pay';
+          return;
+        }
+
+        if (typeof Razorpay === 'undefined') {
+          showToast('Razorpay checkout library could not be loaded. Please refresh.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '✅ Place Order & Pay';
+          return;
+        }
+
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        const options = {
+          key: data.key_id,
+          amount: data.amount,
+          currency: data.currency || 'INR',
+          name: 'BharatBazzar',
+          description: 'Handicraft & Artisan Goods Order',
+          image: 'images/favicon.svg',
+          order_id: data.razorpay_order_id,
+          handler: async function (response) {
+            btn.innerHTML = '<div class="spinner" style="width:22px;height:22px;border-width:2px;"></div> Verifying Payment...';
+            try {
+              const verifyRes = await api.post('/orders/verify-razorpay', {
+                address_id:          selectedAddressId,
+                coupon_code:         couponCode || '',
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature
+              });
+
+              if (verifyRes.ok && verifyRes.data.order_id) {
+                handleOrderSuccess(verifyRes.data);
+              } else {
+                showToast(verifyRes.data.message || 'Payment signature verification failed.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '✅ Place Order & Pay';
+              }
+            } catch (err) {
+              showToast('Error verifying payment with server.', 'error');
+              btn.disabled = false;
+              btn.innerHTML = '✅ Place Order & Pay';
+            }
+          },
+          prefill: {
+            name: user.name || '',
+            email: user.email || '',
+            contact: user.phone || ''
+          },
+          theme: {
+            color: '#b26848'
+          },
+          modal: {
+            ondismiss: function () {
+              btn.disabled = false;
+              btn.innerHTML = '✅ Place Order & Pay';
+              showToast('Payment window closed. Cart preserved.', 'info');
+            }
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          showToast('Payment failed: ' + (response.error?.description || 'Declined'), 'error');
+          btn.disabled = false;
+          btn.innerHTML = '✅ Place Order & Pay';
+        });
+        rzp.open();
+      } catch (e) {
+        showToast('Network error initializing payment.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '✅ Place Order & Pay';
+      }
+      return;
+    }
+
+    // ── CASH ON DELIVERY (COD) PAYMENT FLOW ──
     try {
       const { ok, data } = await api.post('/orders/place', {
         address_id:       selectedAddressId,
         coupon_code:      couponCode || '',
-        payment_method:   selectedPaymentMethod,
-        payment_provider: 'BharatBazzar Demo',
+        payment_method:   'cod',
+        payment_provider: 'Cash on Delivery',
       });
 
       if (ok && data.order_id) {
-        localStorage.removeItem('couponCode');
-        localStorage.setItem('cartCount', 0);
-
-        document.getElementById('checkout-content').classList.add('hidden');
-        document.getElementById('success-screen').classList.remove('hidden');
-        document.getElementById('tx-ref-display').innerHTML =
-          `Order #${data.order_id} &nbsp;|&nbsp; ${data.payment_message}`;
-        showToast('🎉 Order placed successfully!', 'success');
+        handleOrderSuccess(data);
       } else {
         showToast(data.message || 'Order failed. Please try again.', 'error');
         btn.disabled = false;

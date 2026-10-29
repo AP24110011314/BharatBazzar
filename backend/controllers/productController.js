@@ -1,53 +1,80 @@
-const db = require('../config/db');
+const Product   = require('../models/Product');
+const Category  = require('../models/Category');
+const Inventory = require('../models/Inventory');
+const Review    = require('../models/Review');
+const User      = require('../models/User');
 
 // GET /products
 const getProducts = async (req, res) => {
   try {
     const { category, search, min_price, max_price, sort } = req.query;
 
-    let sql = `
-      SELECT p.product_id, p.name, p.description, p.price, p.image_url, p.brand,
-             c.name AS category, c.category_id,
-             i.quantity AS stock,
-             COALESCE(AVG(r.rating), 0) AS avg_rating,
-             COUNT(DISTINCT r.review_id) AS review_count
-      FROM Products p
-      LEFT JOIN Categories  c ON c.category_id = p.category_id
-      LEFT JOIN Inventory   i ON i.product_id  = p.product_id
-      LEFT JOIN Reviews     r ON r.product_id  = p.product_id
-      WHERE p.is_active = 1
-    `;
-    const params = [];
+    const query = { is_active: true };
 
-    if (category) {
-      sql += ' AND p.category_id = ?';
-      params.push(category);
+    const catParam = category || req.query.category_id;
+    if (catParam) {
+      query.category_id = parseInt(catParam);
     }
+
     if (search) {
-      sql += ' AND (p.name LIKE ? OR p.description LIKE ? OR p.brand LIKE ?)';
-      const like = `%${search}%`;
-      params.push(like, like, like);
-    }
-    if (min_price) {
-      sql += ' AND p.price >= ?';
-      params.push(parseFloat(min_price));
-    }
-    if (max_price) {
-      sql += ' AND p.price <= ?';
-      params.push(parseFloat(max_price));
+      const reg = new RegExp(search.trim(), 'i');
+      query.$or = [{ name: reg }, { description: reg }, { brand: reg }];
     }
 
-    sql += ' GROUP BY p.product_id, p.name, p.description, p.price, p.image_url, p.brand, c.name, c.category_id, i.quantity';
+    if (min_price || max_price) {
+      query.price = {};
+      if (min_price) query.price.$gte = parseFloat(min_price);
+      if (max_price) query.price.$lte = parseFloat(max_price);
+    }
 
-    const sortMap = {
-      price_asc:  'p.price ASC',
-      price_desc: 'p.price DESC',
-      rating:     'avg_rating DESC',
-      newest:     'p.created_at DESC',
-    };
-    sql += ` ORDER BY ${sortMap[sort] || 'p.product_id ASC'}`;
+    // Fetch products and all supporting data in parallel from MongoDB Atlas
+    const [rawProducts, categories, inventories, reviews] = await Promise.all([
+      Product.find(query).lean(),
+      Category.find({}).lean(),
+      Inventory.find({}).lean(),
+      Review.find({}).lean()
+    ]);
 
-    const [products] = await db.query(sql, params);
+    const catMap = {};
+    categories.forEach(c => { catMap[c.category_id] = c.name; });
+
+    const invMap = {};
+    inventories.forEach(i => { invMap[i.product_id] = i.quantity; });
+
+    const reviewStats = {};
+    reviews.forEach(r => {
+      if (!reviewStats[r.product_id]) {
+        reviewStats[r.product_id] = { total: 0, count: 0 };
+      }
+      reviewStats[r.product_id].total += r.rating;
+      reviewStats[r.product_id].count += 1;
+    });
+
+    // Enrich products
+    let products = rawProducts.map(p => {
+      const stats = reviewStats[p.product_id] || { total: 0, count: 0 };
+      return {
+        ...p,
+        category: catMap[p.category_id] || 'Uncategorized',
+        stock: invMap[p.product_id] !== undefined ? invMap[p.product_id] : 0,
+        avg_rating: stats.count > 0 ? parseFloat((stats.total / stats.count).toFixed(2)) : 0,
+        review_count: stats.count
+      };
+    });
+
+    // Sort
+    if (sort === 'price_asc') {
+      products.sort((a, b) => a.price - b.price);
+    } else if (sort === 'price_desc') {
+      products.sort((a, b) => b.price - a.price);
+    } else if (sort === 'rating') {
+      products.sort((a, b) => b.avg_rating - a.avg_rating);
+    } else if (sort === 'newest') {
+      products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else {
+      products.sort((a, b) => a.product_id - b.product_id);
+    }
+
     return res.json({ success: true, products });
   } catch (err) {
     console.error('GetProducts error:', err);
@@ -58,32 +85,43 @@ const getProducts = async (req, res) => {
 // GET /products/:id
 const getProductById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const [rows] = await db.query(
-      `SELECT p.*, c.name AS category, i.quantity AS stock,
-              COALESCE(AVG(r.rating), 0) AS avg_rating,
-              COUNT(DISTINCT r.review_id) AS review_count
-       FROM Products p
-       LEFT JOIN Categories c ON c.category_id = p.category_id
-       LEFT JOIN Inventory  i ON i.product_id  = p.product_id
-       LEFT JOIN Reviews    r ON r.product_id  = p.product_id
-       WHERE p.product_id = ? AND p.is_active = 1
-       GROUP BY p.product_id, c.name, i.quantity`,
-      [id]
-    );
+    const id = parseInt(req.params.id);
+    const product = await Product.findOne({ product_id: id, is_active: true }).lean();
 
-    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Product not found.' });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
 
-    // Fetch reviews separately
-    const [reviews] = await db.query(
-      `SELECT r.rating, r.title, r.body, r.created_at, u.name AS reviewer
-       FROM Reviews r JOIN Users u ON u.user_id = r.user_id
-       WHERE r.product_id = ?
-       ORDER BY r.created_at DESC LIMIT 10`,
-      [id]
-    );
+    const cat = await Category.findOne({ category_id: product.category_id }).lean();
+    const inv = await Inventory.findOne({ product_id: id }).lean();
+    const reviewsList = await Review.find({ product_id: id }).sort({ created_at: -1 }).limit(10).lean();
 
-    return res.json({ success: true, product: rows[0], reviews });
+    // Map reviewer names
+    const userIds = reviewsList.map(r => r.user_id);
+    const users = await User.find({ user_id: { $in: userIds } }).lean();
+    const userMap = {};
+    users.forEach(u => { userMap[u.user_id] = u.name; });
+
+    const formattedReviews = reviewsList.map(r => ({
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      created_at: r.created_at,
+      reviewer: userMap[r.user_id] || 'Customer'
+    }));
+
+    const totalStars = reviewsList.reduce((acc, r) => acc + r.rating, 0);
+    const avgRating = reviewsList.length > 0 ? parseFloat((totalStars / reviewsList.length).toFixed(2)) : 0;
+
+    const enriched = {
+      ...product,
+      category: cat ? cat.name : 'Uncategorized',
+      stock: inv ? inv.quantity : 0,
+      avg_rating: avgRating,
+      review_count: reviewsList.length
+    };
+
+    return res.json({ success: true, product: enriched, reviews: formattedReviews });
   } catch (err) {
     console.error('GetProductById error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -93,9 +131,7 @@ const getProductById = async (req, res) => {
 // GET /categories
 const getCategories = async (req, res) => {
   try {
-    const [categories] = await db.query(
-      'SELECT category_id, name, description, parent_id FROM Categories ORDER BY name'
-    );
+    const categories = await Category.find({}).sort({ name: 1 }).lean();
     return res.json({ success: true, categories });
   } catch (err) {
     console.error('GetCategories error:', err);

@@ -1,8 +1,34 @@
 /**
  * api.js — Centralized API client for BharatBazzar frontend
+ * Dynamic host resolution, session helpers, toast alerts & responsive navbar
  */
 
-const API_BASE = 'http://localhost:5001/api';
+function resolveApiBase() {
+  if (typeof window === 'undefined') return '/api';
+  if (window.API_BASE) return window.API_BASE;
+  if (window.BACKEND_API_URL && window.BACKEND_API_URL.trim() !== '') {
+    return window.BACKEND_API_URL.trim().replace(/\/+$/, '');
+  }
+  const storageOverride = localStorage.getItem('BHARATBAZZAR_API_BASE');
+  if (storageOverride && storageOverride.trim() !== '') {
+    return storageOverride.trim().replace(/\/+$/, '');
+  }
+
+  const loc = window.location;
+  // If served directly from Express backend on port 5001
+  if (loc.port === '5001') {
+    return '/api';
+  }
+  // If running on local dev server (port 3000, 5500, 8080, etc.), route to backend port 5001
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+    return `${loc.protocol}//${loc.hostname}:5001/api`;
+  }
+  // When deployed on Vercel or cloud hosts:
+  // Relative '/api' works seamlessly with Vercel rewrites (reverse-proxying to Render)
+  return '/api';
+}
+
+const API_BASE = resolveApiBase();
 
 function getToken() {
   return localStorage.getItem('token');
@@ -62,11 +88,11 @@ function requireAuth() {
 
 // ── helpers ───────────────────────────────────────────────────
 function formatPrice(val) {
-  return '₹' + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₹' + parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function stars(rating) {
-  const full  = Math.round(rating);
+  const full = Math.round(rating || 0);
   let s = '';
   for (let i = 1; i <= 5; i++) s += i <= full ? '★' : '☆';
   return s;
@@ -115,6 +141,14 @@ function hideLoader() {
   if (el) el.remove();
 }
 
+// ── Mobile Navigation Toggle ──────────────────────────────────
+function toggleMobileNav() {
+  const navContainer = document.querySelector('.navbar');
+  if (navContainer) {
+    navContainer.classList.toggle('nav-expanded');
+  }
+}
+
 // ── Navbar builder ────────────────────────────────────────────
 function buildNavbar(activePage) {
   const user = getUser();
@@ -122,34 +156,48 @@ function buildNavbar(activePage) {
   const wishlistCount = parseInt(localStorage.getItem('wishlistCount') || '0');
   const nav = `
     <nav class="navbar">
-      <div class="container">
-        <a href="products.html" class="nav-logo">🛒 BharatBazzar</a>
-        <div class="nav-links">
-          <a href="products.html" class="nav-link ${activePage==='products'?'active':''}">
-            <span>🏪</span><span>Products</span>
-          </a>
-          <a href="wishlist.html" class="nav-link ${activePage==='wishlist'?'active':''}">
-            <span>♡</span><span>Wishlist</span>
-            ${wishlistCount > 0 ? `<span class="cart-badge wishlist-badge" id="wishlist-badge">${wishlistCount}</span>` : '<span class="cart-badge wishlist-badge" id="wishlist-badge" style="display:none">0</span>'}
-          </a>
-          <a href="cart.html" class="nav-link ${activePage==='cart'?'active':''}">
-            <span>🛒</span><span>Cart</span>
-            ${cartCount > 0 ? `<span class="cart-badge" id="cart-badge">${cartCount}</span>` : '<span class="cart-badge" id="cart-badge" style="display:none">0</span>'}
-          </a>
-          <a href="orders.html" class="nav-link ${activePage==='orders'?'active':''}">
-            <span>📦</span><span>Orders</span>
-          </a>
-          ${user && user.role === 'admin' ? `
-          <a href="admin.html" class="nav-link ${activePage==='admin'?'active':''}">
-            <span>🛠️</span><span>Admin</span>
-          </a>` : ''}
-        </div>
-        <div class="nav-user">
-          ${user ? `
-            <div class="nav-avatar">${user.name ? user.name[0].toUpperCase() : 'U'}</div>
-            <span style="font-size:0.85rem; color:var(--text-secondary)">${user.name ? user.name.split(' ')[0] : 'User'}</span>
-            <button onclick="logout()" class="btn btn-outline btn-sm">Logout</button>
-          ` : `<a href="index.html" class="btn btn-primary btn-sm">Login</a>`}
+      <div class="container navbar-inner">
+        <a href="products.html" class="nav-logo">
+          <span class="nav-logo-icon">🌿</span> BharatBazzar
+        </a>
+
+        <button class="mobile-toggle" onclick="toggleMobileNav()" aria-label="Toggle navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="nav-menu" id="navbar-menu">
+          <div class="nav-links">
+            <a href="products.html" class="nav-link ${activePage==='products'?'active':''}">
+              <span class="nav-icon">🏪</span><span>Products</span>
+            </a>
+            <a href="wishlist.html" class="nav-link ${activePage==='wishlist'?'active':''}">
+              <span class="nav-icon">♡</span><span>Wishlist</span>
+              ${wishlistCount > 0 ? `<span class="cart-badge wishlist-badge" id="wishlist-badge">${wishlistCount}</span>` : '<span class="cart-badge wishlist-badge" id="wishlist-badge" style="display:none">0</span>'}
+            </a>
+            <a href="cart.html" class="nav-link ${activePage==='cart'?'active':''}">
+              <span class="nav-icon">🛒</span><span>Cart</span>
+              ${cartCount > 0 ? `<span class="cart-badge" id="cart-badge">${cartCount}</span>` : '<span class="cart-badge" id="cart-badge" style="display:none">0</span>'}
+            </a>
+            <a href="orders.html" class="nav-link ${activePage==='orders'?'active':''}">
+              <span class="nav-icon">📦</span><span>Orders</span>
+            </a>
+            ${user && user.role === 'admin' ? `
+            <a href="admin.html" class="nav-link ${activePage==='admin'?'active':''}">
+              <span class="nav-icon">🛠️</span><span>Admin</span>
+            </a>` : ''}
+          </div>
+
+          <div class="nav-user">
+            ${user ? `
+              <div class="user-chip">
+                <div class="nav-avatar">${user.name ? user.name[0].toUpperCase() : 'U'}</div>
+                <span class="user-name">${user.name ? user.name.split(' ')[0] : 'User'}</span>
+              </div>
+              <button onclick="logout()" class="btn btn-outline btn-sm logout-btn">Logout</button>
+            ` : `<a href="index.html" class="btn btn-primary btn-sm login-btn">Login</a>`}
+          </div>
         </div>
       </div>
     </nav>
@@ -167,7 +215,7 @@ async function updateWishlistBadge() {
     const badge = document.getElementById('wishlist-badge');
     if (badge) {
       badge.textContent = count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
     }
   } catch(e) {}
 }
@@ -181,7 +229,7 @@ async function updateCartBadge() {
     const badge = document.getElementById('cart-badge');
     if (badge) {
       badge.textContent = count;
-      badge.style.display = count > 0 ? 'flex' : 'none';
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
     }
   } catch(e) {}
 }

@@ -46,6 +46,7 @@ router.put('/coupons/:id',         updateCoupon);
 router.put('/coupons/:id/toggle',  toggleCoupon);
 
 // Users
+router.get('/users',               getUserSummary);
 router.get('/user-summary',        getUserSummary);
 router.put('/users/:id/role',      updateUserRole);
 router.delete('/users/:id',        deleteUser);

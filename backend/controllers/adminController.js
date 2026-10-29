@@ -1,4 +1,13 @@
-const db = require('../config/db');
+const User      = require('../models/User');
+const Order     = require('../models/Order');
+const Product   = require('../models/Product');
+const Inventory = require('../models/Inventory');
+const Category  = require('../models/Category');
+const Coupon    = require('../models/Coupon');
+const Review    = require('../models/Review');
+const Payment   = require('../models/Payment');
+const Address   = require('../models/Address');
+const { getNextSequence } = require('../models/Counter');
 
 // ═══════════════════════════════════════════════════════════════
 //  DASHBOARD STATS
@@ -6,30 +15,30 @@ const db = require('../config/db');
 
 const getDashboardStats = async (req, res) => {
   try {
-    const [[revenue]]  = await db.query(
-      `SELECT COALESCE(SUM(total_amount),0) AS total_revenue,
-              COUNT(*) AS total_orders
-       FROM Orders WHERE status != 'cancelled'`
-    );
-    const [[users]]    = await db.query('SELECT COUNT(*) AS total_users FROM Users WHERE role = "customer"');
-    const [[products]] = await db.query('SELECT COUNT(*) AS total_products FROM Products WHERE is_active = 1');
-    const [[lowStock]] = await db.query(
-      'SELECT COUNT(*) AS low_stock_count FROM Inventory WHERE quantity < 10'
-    );
-    const [[coupons]]  = await db.query('SELECT COUNT(*) AS total_coupons FROM Coupons WHERE is_active = 1');
-    const [[categories]] = await db.query('SELECT COUNT(*) AS total_categories FROM Categories');
+    const orders = await Order.find({ status: { $ne: 'cancelled' } }).lean();
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const totalOrders = orders.length;
+
+    const totalUsers = await User.countDocuments({ role: 'customer' });
+    const totalProducts = await Product.countDocuments({ is_active: true });
+    const lowStock = await Inventory.countDocuments({ quantity: { $lt: 10 } });
+    const totalCoupons = await Coupon.countDocuments({ is_active: true });
+    const totalCategories = await Category.countDocuments({});
+
+    const statsObj = {
+      total_revenue: totalRevenue.toFixed(2),
+      total_orders: totalOrders,
+      total_users: totalUsers,
+      total_products: totalProducts,
+      low_stock: lowStock,
+      total_coupons: totalCoupons,
+      total_categories: totalCategories
+    };
 
     return res.json({
       success: true,
-      stats: {
-        total_revenue:    revenue.total_revenue,
-        total_orders:     revenue.total_orders,
-        total_users:      users.total_users,
-        total_products:   products.total_products,
-        low_stock:        lowStock.low_stock_count,
-        total_coupons:    coupons.total_coupons,
-        total_categories: categories.total_categories
-      }
+      stats: statsObj,
+      ...statsObj
     });
   } catch (err) {
     console.error('GetDashboardStats error:', err);
@@ -43,17 +52,37 @@ const getDashboardStats = async (req, res) => {
 
 const getAllOrders = async (req, res) => {
   try {
-    const [orders] = await db.query(
-      `SELECT o.order_id, o.status, o.total_amount, o.subtotal, o.discount, o.created_at,
-              u.name AS user_name, u.email,
-              p.method AS payment_method, p.status AS payment_status
-       FROM Orders o
-       JOIN Users   u ON u.user_id  = o.user_id
-       LEFT JOIN Payments p ON p.order_id = o.order_id
-       ORDER BY o.created_at DESC
-       LIMIT 200`
-    );
-    return res.json({ success: true, orders });
+    const orders = await Order.find({}).sort({ created_at: -1 }).limit(200).lean();
+
+    const userIds = orders.map(o => o.user_id);
+    const orderIds = orders.map(o => o.order_id);
+
+    const users = await User.find({ user_id: { $in: userIds } }).lean();
+    const userMap = {};
+    users.forEach(u => { userMap[u.user_id] = u; });
+
+    const payments = await Payment.find({ order_id: { $in: orderIds } }).lean();
+    const payMap = {};
+    payments.forEach(p => { payMap[p.order_id] = p; });
+
+    const formatted = orders.map(o => {
+      const u = userMap[o.user_id] || {};
+      const p = payMap[o.order_id] || {};
+      return {
+        order_id: o.order_id,
+        status: o.status,
+        total_amount: o.total_amount,
+        subtotal: o.subtotal,
+        discount: o.discount,
+        created_at: o.created_at,
+        user_name: u.name || 'Unknown User',
+        email: u.email || '',
+        payment_method: p.method || 'Online',
+        payment_status: p.status || 'completed'
+      };
+    });
+
+    return res.json({ success: true, orders: formatted });
   } catch (err) {
     console.error('GetAllOrders error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -62,21 +91,41 @@ const getAllOrders = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { status } = req.body;
-    
+
     if (!['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status value.' });
     }
 
-    const [result] = await db.query(
-      'UPDATE Orders SET status = ? WHERE order_id = ?',
-      [status, id]
-    );
-
-    if (result.affectedRows === 0) {
+    const existingOrder = await Order.findOne({ order_id: id });
+    if (!existingOrder) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
+
+    const previousStatus = existingOrder.status;
+
+    // Handle inventory restoration/deduction upon cancellation
+    if (status === 'cancelled' && previousStatus !== 'cancelled') {
+      for (const item of existingOrder.items || []) {
+        await Inventory.findOneAndUpdate(
+          { product_id: item.product_id },
+          { $inc: { quantity: item.quantity } }
+        );
+      }
+      await Payment.findOneAndUpdate({ order_id: id }, { status: 'refunded' });
+    } else if (previousStatus === 'cancelled' && status !== 'cancelled') {
+      for (const item of existingOrder.items || []) {
+        await Inventory.findOneAndUpdate(
+          { product_id: item.product_id },
+          { $inc: { quantity: -item.quantity } }
+        );
+      }
+      await Payment.findOneAndUpdate({ order_id: id }, { status: 'completed' });
+    }
+
+    existingOrder.status = status;
+    await existingOrder.save();
 
     return res.json({ success: true, message: `Order #${id} status updated to ${status}.` });
   } catch (err) {
@@ -87,42 +136,49 @@ const updateOrderStatus = async (req, res) => {
 
 const getOrderDetails = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
+    const order = await Order.findOne({ order_id: id }).lean();
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
 
-    // Order + user + address
-    const [orderRows] = await db.query(
-      `SELECT o.*, u.name AS user_name, u.email, u.phone,
-              a.label AS address_label, a.street, a.city, a.state, a.zip, a.country
-       FROM Orders o
-       JOIN Users u ON u.user_id = o.user_id
-       LEFT JOIN Addresses a ON a.address_id = o.address_id
-       WHERE o.order_id = ?`,
-      [id]
-    );
-    if (orderRows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Order not found.' });
-    }
+    const user = await User.findOne({ user_id: order.user_id }).lean();
+    const address = await Address.findOne({ address_id: order.address_id }).lean();
+    const payment = await Payment.findOne({ order_id: id }).lean();
 
-    // Order items
-    const [items] = await db.query(
-      `SELECT oi.*, p.name AS product_name, p.image_url, p.brand
-       FROM Order_Items oi
-       JOIN Products p ON p.product_id = oi.product_id
-       WHERE oi.order_id = ?`,
-      [id]
-    );
+    const prodIds = (order.items || []).map(i => i.product_id);
+    const products = await Product.find({ product_id: { $in: prodIds } }).lean();
+    const prodMap = {};
+    products.forEach(p => { prodMap[p.product_id] = p; });
 
-    // Payment
-    const [payments] = await db.query(
-      'SELECT * FROM Payments WHERE order_id = ?',
-      [id]
-    );
+    const items = (order.items || []).map(i => {
+      const p = prodMap[i.product_id] || {};
+      return {
+        product_id: i.product_id,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        product_name: p.name || 'Product',
+        image_url: p.image_url || '',
+        brand: p.brand || ''
+      };
+    });
+
+    const orderData = {
+      ...order,
+      user_name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      address_label: address?.label || 'Home',
+      street: address?.street || '',
+      city: address?.city || '',
+      state: address?.state || '',
+      zip: address?.zip || '',
+      country: address?.country || 'India'
+    };
 
     return res.json({
       success: true,
-      order: orderRows[0],
+      order: orderData,
       items,
-      payment: payments[0] || null
+      payment: payment || null
     });
   } catch (err) {
     console.error('GetOrderDetails error:', err);
@@ -136,21 +192,36 @@ const getOrderDetails = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const [products] = await db.query(
-      `SELECT p.product_id, p.name, p.description, p.price, p.image_url, p.brand,
-              p.is_active, p.created_at, p.category_id,
-              c.name AS category,
-              COALESCE(i.quantity, 0) AS stock,
-              COALESCE(AVG(r.rating), 0) AS avg_rating,
-              COUNT(DISTINCT r.review_id) AS review_count
-       FROM Products p
-       LEFT JOIN Categories c ON c.category_id = p.category_id
-       LEFT JOIN Inventory  i ON i.product_id  = p.product_id
-       LEFT JOIN Reviews    r ON r.product_id  = p.product_id
-       GROUP BY p.product_id
-       ORDER BY p.product_id DESC`
-    );
-    return res.json({ success: true, products });
+    const products = await Product.find({}).sort({ product_id: -1 }).lean();
+
+    const categories = await Category.find({}).lean();
+    const catMap = {};
+    categories.forEach(c => { catMap[c.category_id] = c.name; });
+
+    const inventories = await Inventory.find({}).lean();
+    const invMap = {};
+    inventories.forEach(i => { invMap[i.product_id] = i.quantity; });
+
+    const reviews = await Review.find({}).lean();
+    const reviewStats = {};
+    reviews.forEach(r => {
+      if (!reviewStats[r.product_id]) reviewStats[r.product_id] = { total: 0, count: 0 };
+      reviewStats[r.product_id].total += r.rating;
+      reviewStats[r.product_id].count += 1;
+    });
+
+    const formatted = products.map(p => {
+      const stats = reviewStats[p.product_id] || { total: 0, count: 0 };
+      return {
+        ...p,
+        category: catMap[p.category_id] || 'Uncategorized',
+        stock: invMap[p.product_id] !== undefined ? invMap[p.product_id] : 0,
+        avg_rating: stats.count > 0 ? parseFloat((stats.total / stats.count).toFixed(2)) : 0,
+        review_count: stats.count
+      };
+    });
+
+    return res.json({ success: true, products: formatted });
   } catch (err) {
     console.error('GetAllProducts error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -165,19 +236,24 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Name and price are required.' });
     }
 
-    const [result] = await db.query(
-      `INSERT INTO Products (name, description, price, image_url, brand, category_id, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, 1)`,
-      [name, description || null, parseFloat(price), image_url || null, brand || null, category_id || null]
-    );
+    const productId = await getNextSequence('product_id');
 
-    const productId = result.insertId;
+    await Product.create({
+      product_id: productId,
+      name: name.trim(),
+      description: description || '',
+      price: parseFloat(price),
+      image_url: image_url || '',
+      brand: brand || '',
+      category_id: category_id ? parseInt(category_id) : null,
+      is_active: true,
+      created_at: new Date()
+    });
 
-    // Create inventory entry
-    await db.query(
-      'INSERT INTO Inventory (product_id, quantity) VALUES (?, ?)',
-      [productId, parseInt(stock) || 0]
-    );
+    await Inventory.create({
+      product_id: productId,
+      quantity: parseInt(stock) || 0
+    });
 
     return res.status(201).json({ success: true, message: 'Product created successfully.', product_id: productId });
   } catch (err) {
@@ -188,33 +264,20 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { name, description, price, image_url, brand, category_id, is_active } = req.body;
 
-    const fields = [];
-    const values = [];
+    const updates = {};
+    if (name !== undefined) updates.name = name.trim();
+    if (description !== undefined) updates.description = description;
+    if (price !== undefined) updates.price = parseFloat(price);
+    if (image_url !== undefined) updates.image_url = image_url;
+    if (brand !== undefined) updates.brand = brand;
+    if (category_id !== undefined) updates.category_id = category_id ? parseInt(category_id) : null;
+    if (is_active !== undefined) updates.is_active = Boolean(is_active);
 
-    if (name !== undefined)        { fields.push('name = ?');        values.push(name); }
-    if (description !== undefined)  { fields.push('description = ?'); values.push(description); }
-    if (price !== undefined)       { fields.push('price = ?');       values.push(parseFloat(price)); }
-    if (image_url !== undefined)   { fields.push('image_url = ?');   values.push(image_url); }
-    if (brand !== undefined)       { fields.push('brand = ?');       values.push(brand); }
-    if (category_id !== undefined) { fields.push('category_id = ?'); values.push(category_id || null); }
-    if (is_active !== undefined)   { fields.push('is_active = ?');   values.push(is_active ? 1 : 0); }
-
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update.' });
-    }
-
-    values.push(id);
-    const [result] = await db.query(
-      `UPDATE Products SET ${fields.join(', ')} WHERE product_id = ?`,
-      values
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Product not found.' });
-    }
+    const product = await Product.findOneAndUpdate({ product_id: id }, updates, { returnDocument: 'after' });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
 
     return res.json({ success: true, message: 'Product updated successfully.' });
   } catch (err) {
@@ -225,16 +288,9 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const { id } = req.params;
-    // Soft-delete: set is_active = 0
-    const [result] = await db.query(
-      'UPDATE Products SET is_active = 0 WHERE product_id = ?',
-      [id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Product not found.' });
-    }
+    const id = parseInt(req.params.id);
+    const product = await Product.findOneAndUpdate({ product_id: id }, { is_active: false });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
 
     return res.json({ success: true, message: 'Product deactivated successfully.' });
   } catch (err) {
@@ -244,32 +300,63 @@ const deleteProduct = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  TOP PRODUCTS — analytics view
+//  TOP PRODUCTS
 // ═══════════════════════════════════════════════════════════════
 
 const getTopProducts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
-    const [products] = await db.query(
-      `SELECT p.product_id, p.name AS product_name, p.price, p.image_url,
-              c.name AS category,
-              COALESCE(i.quantity, 0) AS stock_remaining,
-              COALESCE(SUM(oi.quantity), 0) AS total_sold,
-              COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_revenue,
-              COALESCE(AVG(r.rating), 0) AS avg_rating
-       FROM Products p
-       LEFT JOIN Categories c  ON c.category_id = p.category_id
-       LEFT JOIN Inventory  i  ON i.product_id  = p.product_id
-       LEFT JOIN Order_Items oi ON oi.product_id = p.product_id
-       LEFT JOIN Reviews    r  ON r.product_id  = p.product_id
-       WHERE p.is_active = 1
-       GROUP BY p.product_id
-       HAVING total_sold > 0
-       ORDER BY total_sold DESC
-       LIMIT ?`,
-      [limit]
-    );
-    return res.json({ success: true, products });
+    const orders = await Order.find({ status: { $ne: 'cancelled' } }).lean();
+
+    const salesMap = {};
+    orders.forEach(o => {
+      (o.items || []).forEach(item => {
+        if (!salesMap[item.product_id]) {
+          salesMap[item.product_id] = { total_sold: 0, total_revenue: 0 };
+        }
+        salesMap[item.product_id].total_sold += item.quantity;
+        salesMap[item.product_id].total_revenue += (item.quantity * item.unit_price);
+      });
+    });
+
+    const activeProducts = await Product.find({ is_active: true }).lean();
+    const categories = await Category.find({}).lean();
+    const catMap = {};
+    categories.forEach(c => { catMap[c.category_id] = c.name; });
+
+    const inventories = await Inventory.find({}).lean();
+    const invMap = {};
+    inventories.forEach(i => { invMap[i.product_id] = i.quantity; });
+
+    const reviews = await Review.find({}).lean();
+    const reviewStats = {};
+    reviews.forEach(r => {
+      if (!reviewStats[r.product_id]) reviewStats[r.product_id] = { total: 0, count: 0 };
+      reviewStats[r.product_id].total += r.rating;
+      reviewStats[r.product_id].count += 1;
+    });
+
+    const list = [];
+    activeProducts.forEach(p => {
+      const sales = salesMap[p.product_id];
+      const stats = reviewStats[p.product_id] || { total: 0, count: 0 };
+      if (sales && sales.total_sold > 0) {
+        list.push({
+          product_id: p.product_id,
+          product_name: p.name,
+          price: p.price,
+          image_url: p.image_url,
+          category: catMap[p.category_id] || 'General',
+          stock_remaining: invMap[p.product_id] !== undefined ? invMap[p.product_id] : 0,
+          total_sold: sales.total_sold,
+          total_revenue: parseFloat(sales.total_revenue.toFixed(2)),
+          avg_rating: stats.count > 0 ? parseFloat((stats.total / stats.count).toFixed(2)) : 0
+        });
+      }
+    });
+
+    list.sort((a, b) => b.total_sold - a.total_sold);
+    return res.json({ success: true, products: list.slice(0, limit) });
   } catch (err) {
     console.error('GetTopProducts error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -282,20 +369,18 @@ const getTopProducts = async (req, res) => {
 
 const updateInventory = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { quantity } = req.body;
 
     if (quantity === undefined || quantity < 0) {
       return res.status(400).json({ success: false, message: 'Valid quantity is required.' });
     }
 
-    // Upsert — if inventory row doesn't exist, create it
-    const [existing] = await db.query('SELECT * FROM Inventory WHERE product_id = ?', [id]);
-    if (existing.length === 0) {
-      await db.query('INSERT INTO Inventory (product_id, quantity) VALUES (?, ?)', [id, parseInt(quantity)]);
-    } else {
-      await db.query('UPDATE Inventory SET quantity = ? WHERE product_id = ?', [parseInt(quantity), id]);
-    }
+    await Inventory.findOneAndUpdate(
+      { product_id: id },
+      { quantity: parseInt(quantity) },
+      { upsert: true, returnDocument: 'after' }
+    );
 
     return res.json({ success: true, message: `Stock updated to ${quantity} units.` });
   } catch (err) {
@@ -305,20 +390,31 @@ const updateInventory = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  CATEGORIES — full CRUD
+//  CATEGORIES
 // ═══════════════════════════════════════════════════════════════
 
 const getAllCategories = async (req, res) => {
   try {
-    const [categories] = await db.query(
-      `SELECT c.*, 
-              p.name AS parent_name,
-              (SELECT COUNT(*) FROM Products WHERE category_id = c.category_id AND is_active = 1) AS product_count
-       FROM Categories c
-       LEFT JOIN Categories p ON p.category_id = c.parent_id
-       ORDER BY c.name`
-    );
-    return res.json({ success: true, categories });
+    const categories = await Category.find({}).sort({ name: 1 }).lean();
+    const catMap = {};
+    categories.forEach(c => { catMap[c.category_id] = c.name; });
+
+    // Count products per category
+    const products = await Product.find({ is_active: true }).lean();
+    const countMap = {};
+    products.forEach(p => {
+      if (p.category_id) {
+        countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
+      }
+    });
+
+    const formatted = categories.map(c => ({
+      ...c,
+      parent_name: c.parent_id ? (catMap[c.parent_id] || null) : null,
+      product_count: countMap[c.category_id] || 0
+    }));
+
+    return res.json({ success: true, categories: formatted });
   } catch (err) {
     console.error('GetAllCategories error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -328,16 +424,17 @@ const getAllCategories = async (req, res) => {
 const createCategory = async (req, res) => {
   try {
     const { name, description, parent_id } = req.body;
-    if (!name) {
-      return res.status(400).json({ success: false, message: 'Category name is required.' });
-    }
+    if (!name) return res.status(400).json({ success: false, message: 'Category name is required.' });
 
-    const [result] = await db.query(
-      'INSERT INTO Categories (name, description, parent_id) VALUES (?, ?, ?)',
-      [name, description || null, parent_id || null]
-    );
+    const categoryId = await getNextSequence('category_id');
+    await Category.create({
+      category_id: categoryId,
+      name: name.trim(),
+      description: description || '',
+      parent_id: parent_id ? parseInt(parent_id) : null
+    });
 
-    return res.status(201).json({ success: true, message: 'Category created.', category_id: result.insertId });
+    return res.status(201).json({ success: true, message: 'Category created.', category_id: categoryId });
   } catch (err) {
     console.error('CreateCategory error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -346,28 +443,16 @@ const createCategory = async (req, res) => {
 
 const updateCategory = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { name, description, parent_id } = req.body;
 
-    const fields = [];
-    const values = [];
-    if (name !== undefined)       { fields.push('name = ?');       values.push(name); }
-    if (description !== undefined) { fields.push('description = ?'); values.push(description); }
-    if (parent_id !== undefined)  { fields.push('parent_id = ?');  values.push(parent_id || null); }
+    const updates = {};
+    if (name !== undefined) updates.name = name.trim();
+    if (description !== undefined) updates.description = description;
+    if (parent_id !== undefined) updates.parent_id = parent_id ? parseInt(parent_id) : null;
 
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update.' });
-    }
-
-    values.push(id);
-    const [result] = await db.query(
-      `UPDATE Categories SET ${fields.join(', ')} WHERE category_id = ?`,
-      values
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Category not found.' });
-    }
+    const cat = await Category.findOneAndUpdate({ category_id: id }, updates, { returnDocument: 'after' });
+    if (!cat) return res.status(404).json({ success: false, message: 'Category not found.' });
 
     return res.json({ success: true, message: 'Category updated.' });
   } catch (err) {
@@ -378,22 +463,18 @@ const updateCategory = async (req, res) => {
 
 const deleteCategory = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
 
-    // Check if products use this category
-    const [[check]] = await db.query(
-      'SELECT COUNT(*) AS cnt FROM Products WHERE category_id = ? AND is_active = 1',
-      [id]
-    );
-    if (check.cnt > 0) {
+    const count = await Product.countDocuments({ category_id: id, is_active: true });
+    if (count > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete — ${check.cnt} active product(s) use this category. Reassign them first.`
+        message: `Cannot delete — ${count} active product(s) use this category. Reassign them first.`
       });
     }
 
-    const [result] = await db.query('DELETE FROM Categories WHERE category_id = ?', [id]);
-    if (result.affectedRows === 0) {
+    const result = await Category.deleteOne({ category_id: id });
+    if (result.deletedCount === 0) {
       return res.status(404).json({ success: false, message: 'Category not found.' });
     }
 
@@ -405,12 +486,12 @@ const deleteCategory = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  COUPONS — full CRUD
+//  COUPONS
 // ═══════════════════════════════════════════════════════════════
 
 const getAllCoupons = async (req, res) => {
   try {
-    const [coupons] = await db.query('SELECT * FROM Coupons ORDER BY coupon_id DESC');
+    const coupons = await Coupon.find({}).sort({ coupon_id: -1 }).lean();
     return res.json({ success: true, coupons });
   } catch (err) {
     console.error('GetAllCoupons error:', err);
@@ -421,22 +502,29 @@ const getAllCoupons = async (req, res) => {
 const createCoupon = async (req, res) => {
   try {
     const { code, discount_type, discount_value, min_order_amt, max_uses } = req.body;
-
     if (!code || !discount_type || !discount_value) {
       return res.status(400).json({ success: false, message: 'Code, type, and value are required.' });
     }
 
-    const [result] = await db.query(
-      `INSERT INTO Coupons (code, discount_type, discount_value, min_order_amt, max_uses, is_active)
-       VALUES (?, ?, ?, ?, ?, 1)`,
-      [code.toUpperCase(), discount_type, parseFloat(discount_value), parseFloat(min_order_amt) || 0, parseInt(max_uses) || null]
-    );
-
-    return res.status(201).json({ success: true, message: 'Coupon created.', coupon_id: result.insertId });
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    const cleanCode = code.trim().toUpperCase();
+    const existing = await Coupon.findOne({ code: cleanCode });
+    if (existing) {
       return res.status(400).json({ success: false, message: 'Coupon code already exists.' });
     }
+
+    const couponId = await getNextSequence('coupon_id');
+    await Coupon.create({
+      coupon_id: couponId,
+      code: cleanCode,
+      discount_type,
+      discount_value: parseFloat(discount_value),
+      min_order_amt: parseFloat(min_order_amt) || 0,
+      max_uses: max_uses ? parseInt(max_uses) : null,
+      is_active: true
+    });
+
+    return res.status(201).json({ success: true, message: 'Coupon created.', coupon_id: couponId });
+  } catch (err) {
     console.error('CreateCoupon error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
@@ -444,36 +532,21 @@ const createCoupon = async (req, res) => {
 
 const updateCoupon = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { code, discount_type, discount_value, min_order_amt, max_uses } = req.body;
 
-    const fields = [];
-    const values = [];
-    if (code !== undefined)           { fields.push('code = ?');           values.push(code.toUpperCase()); }
-    if (discount_type !== undefined)  { fields.push('discount_type = ?');  values.push(discount_type); }
-    if (discount_value !== undefined) { fields.push('discount_value = ?'); values.push(parseFloat(discount_value)); }
-    if (min_order_amt !== undefined)  { fields.push('min_order_amt = ?');  values.push(parseFloat(min_order_amt)); }
-    if (max_uses !== undefined)       { fields.push('max_uses = ?');       values.push(max_uses ? parseInt(max_uses) : null); }
+    const updates = {};
+    if (code !== undefined) updates.code = code.trim().toUpperCase();
+    if (discount_type !== undefined) updates.discount_type = discount_type;
+    if (discount_value !== undefined) updates.discount_value = parseFloat(discount_value);
+    if (min_order_amt !== undefined) updates.min_order_amt = parseFloat(min_order_amt);
+    if (max_uses !== undefined) updates.max_uses = max_uses ? parseInt(max_uses) : null;
 
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update.' });
-    }
-
-    values.push(id);
-    const [result] = await db.query(
-      `UPDATE Coupons SET ${fields.join(', ')} WHERE coupon_id = ?`,
-      values
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Coupon not found.' });
-    }
+    const coupon = await Coupon.findOneAndUpdate({ coupon_id: id }, updates, { returnDocument: 'after' });
+    if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found.' });
 
     return res.json({ success: true, message: 'Coupon updated.' });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ success: false, message: 'Coupon code already exists.' });
-    }
     console.error('UpdateCoupon error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
@@ -481,20 +554,14 @@ const updateCoupon = async (req, res) => {
 
 const toggleCoupon = async (req, res) => {
   try {
-    const { id } = req.params;
-    const [result] = await db.query(
-      'UPDATE Coupons SET is_active = NOT is_active WHERE coupon_id = ?',
-      [id]
-    );
+    const id = parseInt(req.params.id);
+    const coupon = await Coupon.findOne({ coupon_id: id });
+    if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found.' });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'Coupon not found.' });
-    }
+    coupon.is_active = !coupon.is_active;
+    await coupon.save();
 
-    // Fetch updated state
-    const [[coupon]] = await db.query('SELECT is_active FROM Coupons WHERE coupon_id = ?', [id]);
     const state = coupon.is_active ? 'activated' : 'deactivated';
-
     return res.json({ success: true, message: `Coupon ${state}.`, is_active: coupon.is_active });
   } catch (err) {
     console.error('ToggleCoupon error:', err);
@@ -508,16 +575,32 @@ const toggleCoupon = async (req, res) => {
 
 const getUserSummary = async (req, res) => {
   try {
-    const [users] = await db.query(
-      `SELECT u.user_id, u.name, u.email, u.phone, u.role, u.created_at,
-              COUNT(o.order_id) AS total_orders,
-              COALESCE(SUM(o.total_amount), 0) AS total_spent
-       FROM Users u
-       LEFT JOIN Orders o ON u.user_id = o.user_id
-       GROUP BY u.user_id
-       ORDER BY total_spent DESC`
-    );
-    return res.json({ success: true, users });
+    const users = await User.find({}).lean();
+    const orders = await Order.find({}).lean();
+
+    const orderStats = {};
+    orders.forEach(o => {
+      if (!orderStats[o.user_id]) orderStats[o.user_id] = { count: 0, spent: 0 };
+      orderStats[o.user_id].count += 1;
+      orderStats[o.user_id].spent += (o.total_amount || 0);
+    });
+
+    const formatted = users.map(u => {
+      const stats = orderStats[u.user_id] || { count: 0, spent: 0 };
+      return {
+        user_id: u.user_id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        created_at: u.created_at,
+        total_orders: stats.count,
+        total_spent: parseFloat(stats.spent.toFixed(2))
+      };
+    });
+
+    formatted.sort((a, b) => b.total_spent - a.total_spent);
+    return res.json({ success: true, users: formatted });
   } catch (err) {
     console.error('GetUserSummary error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
@@ -526,26 +609,19 @@ const getUserSummary = async (req, res) => {
 
 const updateUserRole = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { role } = req.body;
 
     if (!['customer', 'admin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role. Must be "customer" or "admin".' });
     }
 
-    // Prevent self-demotion
-    if (parseInt(id) === req.user.user_id && role !== 'admin') {
+    if (id === req.user.user_id && role !== 'admin') {
       return res.status(400).json({ success: false, message: 'Cannot demote yourself.' });
     }
 
-    const [result] = await db.query(
-      'UPDATE Users SET role = ? WHERE user_id = ?',
-      [role, id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
+    const user = await User.findOneAndUpdate({ user_id: id }, { role }, { returnDocument: 'after' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
 
     return res.json({ success: true, message: `User #${id} role changed to ${role}.` });
   } catch (err) {
@@ -556,46 +632,42 @@ const updateUserRole = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
 
-    // Prevent self-deletion
-    if (parseInt(id) === req.user.user_id) {
+    if (id === req.user.user_id) {
       return res.status(400).json({ success: false, message: 'Cannot delete your own account.' });
     }
 
-    const [result] = await db.query('DELETE FROM Users WHERE user_id = ?', [id]);
-    if (result.affectedRows === 0) {
+    const orderCount = await Order.countDocuments({ user_id: id });
+    if (orderCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete user — they have existing orders. Remove or reassign orders first.'
+      });
+    }
+
+    const result = await User.deleteOne({ user_id: id });
+    if (result.deletedCount === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    await Address.deleteMany({ user_id: id });
+    await Review.deleteMany({ user_id: id });
+
     return res.json({ success: true, message: `User #${id} deleted.` });
   } catch (err) {
-    if (err.code === 'ER_ROW_IS_REFERENCED_2' || /foreign key/i.test(err.message)) {
-      return res.status(400).json({ success: false, message: 'Cannot delete user — they have existing orders. Remove or reassign orders first.' });
-    }
     console.error('DeleteUser error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  EXPORTS
-// ═══════════════════════════════════════════════════════════════
-
 module.exports = {
-  // Dashboard
   getDashboardStats,
-  // Orders
   getAllOrders, updateOrderStatus, getOrderDetails,
-  // Products
   getAllProducts, createProduct, updateProduct, deleteProduct,
   getTopProducts,
-  // Inventory
   updateInventory,
-  // Categories
   getAllCategories, createCategory, updateCategory, deleteCategory,
-  // Coupons
   getAllCoupons, createCoupon, updateCoupon, toggleCoupon,
-  // Users
   getUserSummary, updateUserRole, deleteUser
 };

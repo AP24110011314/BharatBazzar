@@ -1,28 +1,28 @@
-const mysql = require('mysql2/promise');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               parseInt(process.env.DB_PORT || '3306'),
-  user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || '',
-  database:           process.env.DB_NAME     || 'shopdb',
-  waitForConnections: true,
-  connectionLimit:    10,
-  queueLimit:         0,
-  timezone:           '+00:00',
-});
+const uri = process.env.MONGODB_URI;
 
-// Test connection on startup
-(async () => {
-  try {
-    const conn = await pool.getConnection();
-    console.log('✅  MySQL connected successfully');
-    conn.release();
-  } catch (err) {
-    console.error('❌  MySQL connection failed:', err.message);
+if (!uri) {
+  console.error('❌ MONGODB_URI is not defined in your environment variables.');
+  console.error('Please configure MONGODB_URI in backend/.env');
+  process.exit(1);
+}
+
+const dbName = process.env.DB_NAME || 'shopdb';
+
+mongoose.set('strictQuery', false);
+
+// Connect to MongoDB Atlas
+mongoose.connect(uri, {
+  dbName,
+})
+  .then(() => {
+    console.log(`✅ MongoDB Atlas connected successfully to database "${dbName}"`);
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
     process.exit(1);
-  }
-})();
+  });
 
-module.exports = pool;
+module.exports = mongoose;
