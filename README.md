@@ -45,6 +45,56 @@ The project is completely **deployment-ready** with zero-config blueprints for *
 
 ---
 
+##  📸 Screenshots
+
+🖥️ Login & Dashboard
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="50%">
+        <b>Login Page</b><br/><br/>
+        <img src="screenshots/login.png" alt="BharatBazzar Login Page" width="100%"/>
+      </td>
+      <td align="center" width="50%">
+        <b>Dashboard</b><br/><br/>
+        <img src="screenshots/dashboard.png" alt="BharatBazzar Dashboard" width="100%"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br/>
+
+⸻
+
+🛍️ Order & Payment
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="50%">
+        <b>Order Page</b><br/><br/>
+        <img src="screenshots/order.png" alt="BharatBazzar Order Page" width="100%"/>
+      </td>
+      <td align="center" width="50%">
+        <b>Razorpay Payment Gateway</b><br/><br/>
+        <img src="screenshots/razor.png" alt="BharatBazzar Razorpay Payment Gateway" width="100%"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br/>
+
+⸻
+
+⚙️ Admin Dashboard
+
+<div align="center">
+  <img src="screenshots/admin.png" alt="BharatBazzar Admin Dashboard" width="85%"/>
+</div>
+
+⸻
+
 ## 📁 Repository Structure
 
 ```
