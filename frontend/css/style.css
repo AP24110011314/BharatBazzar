@@ -1529,7 +1529,20 @@ select.form-control {
    RESPONSIVE DESIGN & MOBILE COMPATIBILITY BREAKPOINTS
    ===================================================== */
 
+/* Universal mobile momentum scrolling wrapper */
+.table-scroll-wrap,
+div[style*="overflow-x:auto"],
+div[style*="overflow-x: auto"] {
+  width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 860px) {
+  .container {
+    padding: 0 16px;
+  }
+
   /* Navbar mobile collapse */
   .mobile-toggle {
     display: flex;
@@ -1541,7 +1554,11 @@ select.form-control {
     top: var(--navbar-h);
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.92);
+    max-height: calc(100vh - var(--navbar-h) - 20px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 999;
+    background: rgba(255, 255, 255, 0.94);
     backdrop-filter: var(--glass-blur-lg);
     -webkit-backdrop-filter: var(--glass-blur-lg);
     border-bottom: 1px solid var(--glass-border);
@@ -1613,13 +1630,37 @@ select.form-control {
 }
 
 @media (max-width: 600px) {
+  .container {
+    padding: 0 14px;
+  }
+
   .page-header h1 {
-    font-size: 1.7rem;
+    font-size: 1.55rem;
+  }
+
+  .search-bar {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .sort-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-bar select {
+    flex: 1;
+    width: auto !important;
   }
 
   .checkout-section div[style*="grid-template-columns:1fr 1fr"],
   .checkout-section div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
+  }
+
+  .payment-methods {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
 
   .auth-card {
@@ -1666,6 +1707,23 @@ select.form-control {
     width: 100%;
   }
 
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .order-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .order-item-thumb {
+    width: 48px;
+    height: 48px;
+  }
+
   .toast-container {
     left: 16px;
     right: 16px;
@@ -1677,9 +1735,19 @@ select.form-control {
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 400px) {
+  .container {
+    padding: 0 10px;
+  }
   .products-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .product-img-wrap {
+    height: 220px;
+  }
+  .page-header h1 {
+    font-size: 1.35rem;
   }
 }
 

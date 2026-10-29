@@ -154,16 +154,16 @@
             <!-- Item list -->
             <div style="margin-bottom:12px;">
               ${(order.items || []).map(item => `
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; padding:6px 0; border-bottom:1px solid var(--border-light); color:var(--text-secondary);">
-                  <div style="display:flex; align-items:center; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; padding:8px 0; border-bottom:1px solid var(--border-light); color:var(--text-secondary); flex-wrap:wrap; gap:8px;">
+                  <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 180px;">
                     <img src="${item.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80'}"
                          alt="${item.name}"
                          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&q=80';"
-                         style="width:32px; height:32px; border-radius:4px; object-fit:cover;" />
-                    <span>${item.name} <span style="color:var(--text-muted);">× ${item.quantity}</span></span>
+                         style="width:34px; height:34px; border-radius:4px; object-fit:cover; flex-shrink:0;" />
+                    <span style="word-break:break-word;">${item.name} <span style="color:var(--text-muted); white-space:nowrap;">× ${item.quantity}</span></span>
                   </div>
-                  <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="color:var(--text-primary); font-weight:500;">${formatPrice(item.line_total)}</span>
+                  <div style="display:flex; align-items:center; gap:10px; margin-left:auto;">
+                    <span style="color:var(--text-primary); font-weight:600;">${formatPrice(item.line_total)}</span>
                     ${order.status !== 'cancelled' ? `
                       <button onclick="openReviewModal(${item.product_id}, '${item.name.replace(/'/g, "\\'")}')" class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:0.75rem;">
                         ⭐ Rate
